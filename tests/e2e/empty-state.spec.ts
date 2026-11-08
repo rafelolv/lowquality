@@ -33,8 +33,6 @@ test.describe('empty state and file safety', () => {
       page.getByRole('slider', { name: 'How bad should the image look' }),
     ).toBeHidden();
     await expect(page.getByTestId('download-disaster')).toHaveCount(0);
-
-    await expect(page.getByText('100% local processing')).toBeVisible();
   });
 
   test('can open the picker from the keyboard', async ({ page }) => {

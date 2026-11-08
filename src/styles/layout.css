@@ -348,14 +348,6 @@
   text-transform: uppercase;
 }
 
-.hero-badge__dot {
-  width: 5px;
-  height: 5px;
-  background: var(--green);
-  border-radius: 50%;
-  box-shadow: 0 0 7px var(--green);
-}
-
 .hero__stamp {
   position: relative;
   justify-self: end;

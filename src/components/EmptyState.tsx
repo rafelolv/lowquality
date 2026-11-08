@@ -3,7 +3,6 @@ import {
   Check,
   FileWarning,
   Loader2,
-  LockKeyhole,
   Sparkles,
   UploadCloud,
 } from 'lucide-react';
@@ -90,10 +89,6 @@ export function EmptyState({
               <Sparkles size={16} aria-hidden="true" />
               Try sample image
             </button>
-            <span className="privacy-chip">
-              <LockKeyhole size={13} aria-hidden="true" />
-              100% local processing
-            </span>
           </div>
 
           <ul className="format-list" aria-label="Supported formats">

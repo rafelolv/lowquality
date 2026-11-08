@@ -835,25 +835,6 @@ li {
    Misc primitives
    -------------------------------------------------------------------------- */
 
-.privacy-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 9px;
-  color: var(--lavender);
-  background: rgba(28, 11, 52, 0.55);
-  border: 1px solid var(--line-soft);
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.privacy-chip svg {
-  color: var(--green);
-}
-
 .field {
   display: flex;
   flex-direction: column;

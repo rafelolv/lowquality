@@ -199,7 +199,7 @@ export function GifScaleDialog({ pending, onCancel, onConfirm }: GifScaleDialogP
 
         <p className="dialog__privacy">
           <LockKeyhole size={12} aria-hidden="true" />
-          Still 100% local. Working at {percent}% size.
+          Still entirely in your browser. Working at {percent}% size.
         </p>
       </div>
     </div>

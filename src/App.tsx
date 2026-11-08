@@ -1105,10 +1105,6 @@ export default function App() {
                 GIF and crank the damage. Everything happens in your browser.
               </p>
               <div className="hero__badges">
-                <span className="hero-badge">
-                  <span className="hero-badge__dot" aria-hidden="true" />
-                  100% local
-                </span>
                 <span className="hero-badge">No sign-up</span>
                 <span className="hero-badge">GIF-friendly</span>
                 <span className="hero-badge">Open source</span>

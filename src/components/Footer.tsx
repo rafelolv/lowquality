@@ -1,4 +1,4 @@
-import { Heart, LockKeyhole } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { Mascot } from './Mascot';
 
 function PixelGround() {
@@ -57,10 +57,6 @@ export function Footer() {
         </nav>
 
         <div className="site-footer__meta">
-          <span className="privacy-chip">
-            <LockKeyhole size={13} strokeWidth={2.6} aria-hidden="true" />
-            100% local
-          </span>
           <p>
             Built with <Heart size={12} fill="currentColor" aria-hidden="true" />
             <span className="visually-hidden">love</span> for the bitrot age. MIT
