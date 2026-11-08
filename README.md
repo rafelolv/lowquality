@@ -38,6 +38,10 @@ npm run build
 npm run preview
 ```
 
+### Deploying to GitHub Pages
+
+The `main` branch is deployed automatically to GitHub Pages after every push. In the repository settings, open **Pages** and set the build and deployment source to **GitHub Actions**. The workflow builds the static site and publishes `dist`; it can also be started manually from the **Actions** tab.
+
 Other useful scripts:
 
 ```bash
