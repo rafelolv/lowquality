@@ -13,6 +13,9 @@ for (const viewport of VIEWPORTS) {
     test("empty state has no horizontal overflow", async ({ page }) => {
       await page.goto("/");
       await expect(page.locator(".empty-upload")).toBeVisible();
+      await expect(page.locator(".empty-upload")).toBeInViewport({
+        ratio: 1,
+      });
       await expect(page.locator(".sample-demo")).toBeVisible();
       expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
     });

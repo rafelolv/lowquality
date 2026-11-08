@@ -35,6 +35,12 @@ test.describe('empty state and file safety', () => {
     await expect(page.getByTestId('download-disaster')).toHaveCount(0);
   });
 
+  test('surfaces the uploader in the first screen', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    await expect(page.locator('.empty-upload')).toBeInViewport({ ratio: 1 });
+  });
+
   test('can open the picker from the keyboard', async ({ page }) => {
     await page.goto('/');
     const upload = page.locator('.empty-upload');

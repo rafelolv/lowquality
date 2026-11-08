@@ -1071,7 +1071,7 @@ export default function App() {
   const workerUnavailable = !support.supported || workerFailed;
 
   return (
-    <div className={`app${session ? " app--editing" : ""}`}>
+    <div className={`app${session ? " app--editing" : " app--empty"}`}>
       <a className="skip-link" href="#editor">
         Skip to the editor
       </a>
