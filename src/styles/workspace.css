@@ -1,0 +1,296 @@
+/* Loaded workspace: keep the image and its main adjustment together. */
+.app--editing .site-header__inner {
+  gap: 10px;
+  padding-block: 12px 18px;
+}
+
+.app--editing .brand__mascot {
+  width: 42px;
+}
+
+.app--editing .brand__name {
+  font-size: clamp(22px, 3vw, 32px);
+}
+
+.app--editing .brand__tagline,
+.app--editing .ticker,
+.app--editing .hero .eyebrow,
+.app--editing .hero__lede,
+.app--editing .hero__badges,
+.app--editing .hero__stamp {
+  display: none;
+}
+
+.app--editing .hero {
+  display: block;
+  padding: 22px 0 10px;
+}
+
+.app--editing .hero h1 {
+  max-width: none;
+  font-size: clamp(26px, 3.2vw, 38px);
+  line-height: 1.1;
+  text-wrap: initial;
+  text-shadow: 3px 3px 0 var(--line);
+}
+
+.app--editing .hero__worse {
+  display: inline;
+}
+
+.app--editing .editor-section__intro .eyebrow {
+  display: none;
+}
+
+.app--editing .editor-section__intro h2 {
+  font-size: 22px;
+}
+
+.app--editing .editor-grid {
+  grid-template-columns: minmax(290px, 340px) minmax(0, 1fr);
+  grid-template-areas: "source studio" "controls studio";
+  grid-template-rows: auto 1fr;
+  gap: 16px 22px;
+}
+
+.editor-source {
+  grid-area: source;
+  min-width: 0;
+}
+
+.app--editing .editor-controls {
+  grid-area: controls;
+  gap: 14px;
+}
+
+.app--editing .editor-studio {
+  grid-area: studio;
+  gap: 12px;
+}
+
+.app--editing .preview-stage {
+  min-height: clamp(180px, calc(100dvh - 530px), 420px);
+}
+
+.quality-panel--compact .panel__header {
+  padding-block: 7px;
+}
+
+.quality-panel--compact .quality-readout {
+  padding-block: 3px;
+}
+
+.quality-panel--compact .quality-panel__body {
+  padding: 12px 14px 8px;
+}
+
+.quality-panel--compact .quality-panel__question {
+  font-size: 28px;
+}
+
+.quality-panel--compact .quality-panel__heading {
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.quality-panel--compact .quality-panel__explanation,
+.quality-panel--compact .quality-panel__hint {
+  display: none;
+}
+
+.quality-panel--compact .quality-panel__ticks {
+  height: 23px;
+  margin-top: 3px;
+}
+
+.app--editing .preset-grid {
+  gap: 6px;
+  padding: 9px;
+}
+
+.app--editing .preset-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 7px;
+  min-height: 64px;
+  padding: 9px 7px;
+}
+
+.app--editing .preset-card__top {
+  margin: 0;
+}
+
+.app--editing .preset-card__check {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 11px;
+  height: 11px;
+}
+
+.app--editing .preset-card__name {
+  font-size: 11px;
+}
+
+.app--editing .preset-card__desc {
+  grid-column: 2;
+  font-size: 9px;
+}
+
+.app--editing .preset-card__meter {
+  display: none;
+}
+
+.app--editing .preset-panel__hint {
+  font-size: 9px;
+}
+
+.export-bar__dock {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+@media (min-width: 1025px) and (min-height: 700px) {
+  .app--editing .editor-studio {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+  }
+}
+
+@media (max-width: 1024px) {
+  .app--editing .editor-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "source" "studio" "controls";
+    grid-template-rows: auto;
+    gap: 14px;
+  }
+
+  .app--editing .editor-studio {
+    order: initial;
+  }
+
+  .app--editing .preview-stage {
+    min-height: clamp(260px, 42dvh, 420px);
+  }
+
+  .app--editing .preset-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  /* Leave room for the dock, including devices with a home indicator. */
+  .app--editing {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .app--editing :is(button, input, textarea, select, a, [tabindex]) {
+    scroll-margin-bottom: calc(150px + env(safe-area-inset-bottom));
+  }
+
+  .app--editing .hero {
+    padding-top: 15px;
+  }
+
+  .app--editing .editor-section__intro {
+    gap: 5px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+  }
+
+  .app--editing .editor-section__tip {
+    font-size: 11px;
+  }
+
+  .app--editing .preview-stage {
+    min-height: clamp(220px, 32dvh, 320px);
+  }
+
+  .app--editing .upload-card__actions {
+    gap: 5px;
+  }
+
+  .app--editing .upload-card__actions .button {
+    flex: 1;
+    min-height: 38px;
+    padding-inline: 5px;
+    font-size: 6px;
+  }
+
+  .app--editing .preset-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app--editing .preset-card {
+    min-height: 62px;
+  }
+
+  .export-bar__dock {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 80;
+    padding: 10px max(14px, env(safe-area-inset-right))
+      calc(10px + env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+    background: var(--panel-deep);
+    border-top: 3px solid var(--line-soft);
+    box-shadow:
+      0 -5px 0 var(--line),
+      0 -12px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .export-bar__dock .export-bar__actions {
+    flex-direction: row;
+  }
+
+  .export-bar__dock .button--download {
+    min-width: 0;
+    min-height: 48px;
+    font-size: clamp(7px, 2.3vw, 10px);
+    padding-inline: 8px;
+  }
+
+  .export-bar__dock .button--copy {
+    flex: none;
+    width: 48px;
+    min-height: 48px;
+    padding: 8px;
+  }
+
+  .export-bar__dock .button--copy-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .export-bar__dock .export-progress {
+    padding-top: 6px;
+  }
+
+  .export-bar__dock .export-progress__stage {
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app--editing .format-picker {
+    flex-wrap: nowrap;
+  }
+
+  .app--editing .format-option {
+    flex: 1;
+    min-height: 36px;
+  }
+
+  .app--editing .toast-stack {
+    bottom: calc(140px + env(safe-area-inset-bottom));
+  }
+}
