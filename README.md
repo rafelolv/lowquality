@@ -2,11 +2,7 @@
 
 ### Make your images look worse.
 
-<p>
-  <a href="https://rafelolv.github.io/lowquality/"><strong>▶ Open the app</strong></a>
-  &nbsp;·&nbsp;
-  <a href="https://github.com/rafelolv/lowquality/releases/tag/v1.0.0">v1.0.0</a>
-</p>
+<p><a href="https://rafelolv.github.io/lowquality/">Try it live ↗</a></p>
 
 LowQuality is a browser-only image destruction studio. Drop in a JPEG, PNG, WebP, BMP, AVIF, SVG, or animated GIF, crank the **HOW BAD?** slider, and download the evidence. Every pixel is processed inside the tab: there is no backend, no account, no upload, and no analytics.
 
