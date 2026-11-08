@@ -2,6 +2,8 @@
 
 **Make your images look worse.**
 
+[Try LowQuality](https://rafelolv.github.io/lowquality/)
+
 LowQuality is a browser-only image destruction studio. Drop in a JPEG, PNG, WebP, BMP, AVIF, SVG, or animated GIF, crank the **HOW BAD?** slider, and download the evidence. Every pixel is processed inside the tab: there is no backend, no account, no upload, and no analytics.
 
 The interface is a deliberately unsubtle retro 8-bit console: dark purple checkerboard, thick violet panels, gold buttons, pixel typography, a tiny skyline, and Bitrot the mascot.
@@ -37,10 +39,6 @@ Open the URL printed by Vite. To test the production bundle:
 npm run build
 npm run preview
 ```
-
-### Deploying to GitHub Pages
-
-The `main` branch is deployed automatically to GitHub Pages after every push. In the repository settings, open **Pages** and set the build and deployment source to **GitHub Actions**. The workflow builds the static site and publishes `dist`; it can also be started manually from the **Actions** tab.
 
 Other useful scripts:
 
@@ -99,6 +97,10 @@ The random seeds are derived from the settings and frame index, so text edits an
 ## Privacy
 
 There is no server-side component in this repository. Images are read from disk, decoded, processed, previewed, and exported entirely in the browser. The only network activity in production is loading the static site and its bundled font/sample files. Nothing is written to storage or sent to a third party.
+
+## Deployment
+
+[The site is live on GitHub Pages](https://rafelolv.github.io/lowquality/). Pushes to `main` build and deploy it automatically.
 
 ## Tech stack
 
