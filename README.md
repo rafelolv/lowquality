@@ -1,12 +1,20 @@
-# LowQuality
+# <img src="public/favicon.svg" width="36" height="36" alt=""> LowQuality
 
-**Make your images look worse.**
+### Make your images look worse.
 
-[Try LowQuality](https://rafelolv.github.io/lowquality/)
+<p>
+  <a href="https://rafelolv.github.io/lowquality/"><strong>▶ Open the app</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/rafelolv/lowquality/releases/tag/v1.0.0">v1.0.0</a>
+</p>
 
 LowQuality is a browser-only image destruction studio. Drop in a JPEG, PNG, WebP, BMP, AVIF, SVG, or animated GIF, crank the **HOW BAD?** slider, and download the evidence. Every pixel is processed inside the tab: there is no backend, no account, no upload, and no analytics.
 
 The interface is a deliberately unsubtle retro 8-bit console: dark purple checkerboard, thick violet panels, gold buttons, pixel typography, a tiny skyline, and Bitrot the mascot.
+
+|                                           Before                                           |                                                    After                                                    |
+| :----------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------: |
+| <img src="public/samples/sample-original.png" width="360" alt="Original pixel-art sample"> | <img src="public/samples/sample-destroyed.png" width="360" alt="Same sample after heavy image degradation"> |
 
 ## Features
 
