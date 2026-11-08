@@ -41,6 +41,25 @@ test.describe('animated GIF workflow', () => {
     await expect(page.locator('.playback-control')).toContainText(/[1-6]\/6/);
   });
 
+  test('labels a single-frame GIF without animation controls', async ({ page }) => {
+    await page.goto('/');
+    await page.getByTestId('file-input').setInputFiles({
+      name: 'still.gif',
+      mimeType: 'image/gif',
+      buffer: Buffer.from(
+        'R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==',
+        'base64',
+      ),
+    });
+    await waitForPreview(page);
+    await expect(page.locator('.preview-panel__meta')).toContainText('1 frame');
+    await expect(page.locator('.preview-panel__meta')).not.toContainText(
+      '1 frames',
+    );
+    await expect(page.locator('.upload-card')).toContainText('1 frame');
+    await expect(page.locator('.playback-control')).toHaveCount(0);
+  });
+
   test('exports a GIF with all frames, delays and looping, plus a still PNG', async ({
     page,
   }, testInfo) => {

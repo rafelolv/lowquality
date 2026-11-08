@@ -35,6 +35,8 @@ jobs:
 
       - name: Build site
         run: npm run build
+        env:
+          VITE_GITHUB_URL: ${{ github.server_url }}/${{ github.repository }}
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

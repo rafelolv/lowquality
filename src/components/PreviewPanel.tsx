@@ -24,7 +24,7 @@ import type {
   ViewMode,
 } from "../types";
 import { ZOOM_LEVELS } from "../lib/constants";
-import { formatDimensions, formatFileSize } from "../lib/imageLoader";
+import { formatDimensions, formatFileSize, formatFrameCount } from "../lib/imageLoader";
 import { formatDuration } from "../lib/files";
 import { useElementSize } from "../hooks/useElementSize";
 import { useReducedMotion } from "../hooks/useReducedMotion";
@@ -79,6 +79,7 @@ export function PreviewPanel({
   const originalCanvasRef = useRef<HTMLCanvasElement>(null);
   const resultCanvasRef = useRef<HTMLCanvasElement>(null);
   const dragRef = useRef<DragState | null>(null);
+  const compareDragRef = useRef(false);
   const completedLoopsRef = useRef(0);
   const size = useElementSize(stageRef);
   const reducedMotion = useReducedMotion();
@@ -220,6 +221,22 @@ export function PreviewPanel({
     }
   };
 
+  const updateCompareSplit = (clientX: number) => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const rect = frame.getBoundingClientRect();
+    if (rect.width === 0) return;
+    setSplit(Math.round(clamp01((clientX - rect.left) / rect.width) * 100));
+  };
+
+  const endCompareDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (!compareDragRef.current) return;
+    compareDragRef.current = false;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
   return (
     <section
       className={`panel preview-panel${dragActive ? " preview-panel--drag" : ""}`}
@@ -251,7 +268,7 @@ export function PreviewPanel({
             {isGif && (
               <>
                 {" "}
-                · {session.frameCount} frames ·{" "}
+                · {formatFrameCount(session.frameCount)} ·{" "}
                 {formatDuration(session.durationMs)}
               </>
             )}
@@ -300,6 +317,18 @@ export function PreviewPanel({
             className={`preview-frame preview-frame--${viewMode}`}
             style={frameStyle}
             ref={frameRef}
+            onPointerDown={(event) => {
+              if (viewMode !== "compare" || event.button !== 0) return;
+              event.currentTarget.setPointerCapture(event.pointerId);
+              compareDragRef.current = true;
+              updateCompareSplit(event.clientX);
+            }}
+            onPointerMove={(event) => {
+              if (!compareDragRef.current) return;
+              updateCompareSplit(event.clientX);
+            }}
+            onPointerUp={endCompareDrag}
+            onPointerCancel={endCompareDrag}
           >
             <div
               className={`preview-layer preview-layer--original${
@@ -481,6 +510,7 @@ export function PreviewPanel({
             className="zoom-readout"
             onClick={() => setZoom(1)}
             title="Fit to window"
+            aria-label="Reset zoom to fit"
           >
             <span>{actualPercent}%</span>
             <span className="zoom-readout__mode">
@@ -513,7 +543,7 @@ export function PreviewPanel({
           </label>
         )}
 
-        {isGif && resultVisible && preview && (
+        {isGif && resultVisible && preview && frameCount >= 2 && (
           <div className="playback-control">
             <button
               type="button"

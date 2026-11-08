@@ -15,7 +15,13 @@ export function Header() {
       <HeaderArt />
       <div className="site-header__grain" aria-hidden="true" />
       <div className="container site-header__inner">
-        <a className="header-github" href={GITHUB_URL} target="_blank" rel="noreferrer">
+        <a
+          className="header-github"
+          href={GITHUB_URL}
+          target="_blank"
+          rel="noreferrer noopener"
+          aria-label="View LowQuality on GitHub"
+        >
           <Github size={17} strokeWidth={2.5} aria-hidden="true" />
           <span>GitHub</span>
         </a>

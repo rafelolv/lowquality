@@ -130,6 +130,23 @@ test.describe('static image workflow', () => {
     await expect(split).toHaveValue('25');
     await expect(page.locator('.split-control output')).toHaveText('25%');
 
+    // Dragging anywhere on the compare frame moves the divider.
+    const frame = await page.locator('.preview-frame').boundingBox();
+    expect(frame).toBeTruthy();
+    await page.mouse.move(
+      frame!.x + frame!.width / 2,
+      frame!.y + frame!.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      frame!.x + frame!.width * 0.75,
+      frame!.y + frame!.height / 2,
+      { steps: 4 },
+    );
+    await page.mouse.up();
+    await expect(split).toHaveValue('75');
+    await expect(page.locator('.split-control output')).toHaveText('75%');
+
     await page.locator('.view-tabs').getByRole('button', { name: 'Original' }).click();
     await expect(page.locator('.preview-layer--result')).toHaveAttribute(
       'aria-hidden',

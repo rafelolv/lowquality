@@ -28,7 +28,12 @@ export function About() {
           </p>
 
           <div className="about-actions">
-            <a className="button button--secondary" href={GITHUB_URL} target="_blank" rel="noreferrer">
+            <a
+              className="button button--secondary"
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
               <Github size={16} aria-hidden="true" />
               View the source
             </a>

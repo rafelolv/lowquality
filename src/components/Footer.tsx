@@ -62,8 +62,9 @@ export function Footer() {
             100% local
           </span>
           <p>
-            Built with <Heart size={12} fill="currentColor" aria-hidden="true" /> for the
-            bitrot age. MIT licensed.
+            Built with <Heart size={12} fill="currentColor" aria-hidden="true" />
+            <span className="visually-hidden">love</span> for the bitrot age. MIT
+            licensed.
           </p>
           <span className="site-footer__fine">No servers. No accounts. No mercy.</span>
         </div>

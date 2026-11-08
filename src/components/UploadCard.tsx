@@ -9,7 +9,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 import type { ImageSession } from "../types";
-import { formatDimensions, formatFileSize } from "../lib/imageLoader";
+import { formatDimensions, formatFileSize, formatFrameCount } from "../lib/imageLoader";
 
 interface UploadCardProps {
   session: ImageSession | null;
@@ -63,10 +63,12 @@ export function UploadCard({
               </span>
               {session.kind === "gif" && (
                 <span className="file-card__meta">
-                  {session.frameCount} frames ·{" "}
+                  {formatFrameCount(session.frameCount)}
                   {session.wasScaled
-                    ? `scaled from ${formatDimensions(session.sourceWidth, session.sourceHeight)}`
-                    : "animated"}
+                    ? ` · scaled from ${formatDimensions(session.sourceWidth, session.sourceHeight)}`
+                    : session.frameCount > 1
+                      ? " · animated"
+                      : ""}
                 </span>
               )}
             </div>

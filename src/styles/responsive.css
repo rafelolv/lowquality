@@ -644,6 +644,13 @@
   }
 }
 
+@media (max-width: 350px) {
+  .quality-tick:nth-child(2) .quality-tick__label,
+  .quality-tick:nth-child(5) .quality-tick__label {
+    display: none;
+  }
+}
+
 @media (pointer: coarse) {
   .text-box {
     border-color: rgba(255, 204, 41, 0.28);

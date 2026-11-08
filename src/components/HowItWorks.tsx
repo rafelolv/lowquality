@@ -54,8 +54,8 @@ export function HowItWorks() {
         <div className="local-strip">
           <LockKeyhole size={16} aria-hidden="true" />
           <span>
-            Your files never touch a server. The only network request is loading this
-            page and its locally bundled fonts.
+            Your files never touch a server. Loading this page and its bundled assets is
+            the only network activity.
           </span>
         </div>
       </div>

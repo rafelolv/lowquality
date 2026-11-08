@@ -3,6 +3,7 @@ import {
   extensionOf,
   formatDimensions,
   formatFileSize,
+  formatFrameCount,
   getFileFormat,
   isGifFile,
   isHeicFile,
@@ -67,5 +68,8 @@ describe('image file inspection', () => {
     expect(formatFileSize(1.5 * 1024 * 1024)).toBe('1.5 MB');
     expect(formatFileSize(12 * 1024 * 1024)).toBe('12 MB');
     expect(formatDimensions(1920, 1080)).toBe('1,920 × 1,080');
+    expect(formatFrameCount(1)).toBe('1 frame');
+    expect(formatFrameCount(2)).toBe('2 frames');
+    expect(formatFrameCount(0)).toBe('0 frames');
   });
 });

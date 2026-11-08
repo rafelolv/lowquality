@@ -120,6 +120,10 @@ export function formatDimensions(width: number, height: number): string {
   return `${width.toLocaleString('en-US')} × ${height.toLocaleString('en-US')}`;
 }
 
+export function formatFrameCount(count: number): string {
+  return `${count} ${count === 1 ? 'frame' : 'frames'}`;
+}
+
 function hasAnyTransparency(data: Uint8ClampedArray): boolean {
   // Checking every fourth byte is cheap relative to decoding, but we can stride
   // for very large images while still catching normal transparency.

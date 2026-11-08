@@ -6,7 +6,7 @@ import {
   MAX_GIF_TOTAL_PIXELS,
   fitScaleOptions,
 } from '../lib/constants';
-import { formatFileSize } from '../lib/imageLoader';
+import { formatFileSize, formatFrameCount } from '../lib/imageLoader';
 
 export interface GifScalePending {
   file: File;
@@ -173,7 +173,8 @@ export function GifScaleDialog({ pending, onCancel, onConfirm }: GifScaleDialogP
         <p className="dialog__summary">
           <ImageDown size={14} aria-hidden="true" />
           <span>
-            {selectedWidth} × {selectedHeight} · {pending.probe.frameCount} frames ·{' '}
+            {selectedWidth} × {selectedHeight} ·{' '}
+            {formatFrameCount(pending.probe.frameCount)} ·{' '}
             {(selectedPixels / 1_000_000).toFixed(1)}M decoded pixels
           </span>
         </p>

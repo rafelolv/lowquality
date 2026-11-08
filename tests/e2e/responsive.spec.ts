@@ -74,6 +74,29 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
+test.describe("small phone quality ticks", () => {
+  test.use({ viewport: { width: 320, height: 700 } });
+
+  test("visible tick labels stay separated", async ({ page }) => {
+    await loadSample(page);
+    const labels = page.locator(".quality-tick__label:visible");
+    await expect(labels).toHaveCount(4);
+    const boxes = await labels.evaluateAll((elements) =>
+      elements
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          return { left: rect.left, right: rect.right };
+        })
+        .sort((a, b) => a.left - b.left),
+    );
+    for (let index = 1; index < boxes.length; index += 1) {
+      expect(boxes[index]!.left).toBeGreaterThanOrEqual(
+        boxes[index - 1]!.right - 1,
+      );
+    }
+  });
+});
+
 test("desktop preview follows expanded controls without losing the main slider", async ({
   page,
 }) => {

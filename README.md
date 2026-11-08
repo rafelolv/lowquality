@@ -155,7 +155,7 @@ The build is a static `dist/` directory and needs no server runtime.
    - **Build command:** `npm run build`
    - **Build output directory:** `dist`
    - **Node version:** 22.12 or newer (`NODE_VERSION=22`)
-4. Optionally set `VITE_GITHUB_URL` to your repository URL so the header and About links leave the placeholder default:
+4. Optionally set `VITE_GITHUB_URL` to your repository URL to override the default `https://github.com/rafelolv/lowquality` header and About links:
 
 ```bash
 VITE_GITHUB_URL=https://github.com/your-username/lowquality
