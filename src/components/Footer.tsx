@@ -35,7 +35,11 @@ function PixelGround() {
   );
 }
 
-export function Footer() {
+interface FooterProps {
+  onOpenConverter: () => void;
+}
+
+export function Footer({ onOpenConverter }: FooterProps) {
   return (
     <footer className="site-footer">
       <div className="footer-ground-wrap">
@@ -62,7 +66,19 @@ export function Footer() {
             <span className="visually-hidden">love</span> for the bitrot age. MIT
             licensed.
           </p>
-          <span className="site-footer__fine">No servers. No accounts. No mercy.</span>
+          <span className="site-footer__fine">
+            No servers. No accounts.{" "}
+            <button
+              type="button"
+              className="site-footer__mercy"
+              onClick={onOpenConverter}
+              title="Psst. Some mercy: convert an image without the damage."
+              aria-label="Open the secret image converter"
+              data-testid="open-converter"
+            >
+              No mercy.
+            </button>
+          </span>
         </div>
       </div>
     </footer>

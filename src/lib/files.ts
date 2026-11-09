@@ -43,6 +43,13 @@ export function buildDownloadName(
   return `lowquality-${base}.${exportExtension(format)}`;
 }
 
+export function buildConvertedName(
+  sourceName: string,
+  format: Exclude<ExportFormat, 'gif'>,
+): string {
+  return `${safeBaseName(sourceName)}.${exportExtension(format)}`;
+}
+
 export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');

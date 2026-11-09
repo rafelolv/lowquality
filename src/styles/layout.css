@@ -775,6 +775,33 @@
   text-transform: uppercase;
 }
 
+.site-footer__mercy {
+  display: inline;
+  margin: -5px -6px;
+  padding: 5px 6px;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 2px;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  text-align: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.site-footer__mercy:hover {
+  color: var(--yellow);
+  background: rgba(255, 204, 41, 0.08);
+}
+
+.site-footer__mercy:focus-visible {
+  color: var(--yellow);
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+
 /* --------------------------------------------------------------------------
    Toasts
    -------------------------------------------------------------------------- */
@@ -1103,4 +1130,171 @@
 
 .dialog__privacy svg {
   color: var(--green);
+}
+
+/* --------------------------------------------------------------------------
+   Secret converter
+   -------------------------------------------------------------------------- */
+
+.converter-dialog {
+  width: min(600px, 100%);
+}
+
+.converter-dialog__icon {
+  background: var(--green);
+}
+
+.converter-drop {
+  width: 100%;
+  min-height: 128px;
+  margin-top: 18px;
+  cursor: pointer;
+}
+
+.converter-drop:focus-within {
+  border-color: var(--yellow);
+  outline: 2px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+.converter-source {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.converter-source .file-card {
+  flex: 1;
+  min-width: 0;
+}
+
+.converter-source .button {
+  flex: none;
+}
+
+.converter-formats {
+  min-width: 0;
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.converter-formats legend {
+  margin-bottom: 8px;
+  color: var(--lavender-bright);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+.converter-formats__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.converter-format {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 10px 11px;
+  color: var(--muted);
+  background: rgba(12, 4, 23, 0.38);
+  border: 2px solid var(--line-soft);
+  border-radius: 3px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.converter-format:hover:not(:disabled) {
+  border-color: var(--lavender);
+}
+
+.converter-format:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.converter-format--active {
+  background: rgba(255, 204, 41, 0.1);
+  border-color: var(--yellow);
+  box-shadow: inset 0 0 0 1px rgba(255, 204, 41, 0.25);
+}
+
+.converter-format__label {
+  color: var(--cream);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.converter-format--active .converter-format__label {
+  color: var(--yellow);
+}
+
+.converter-format__note {
+  color: var(--muted-2);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.converter-progress {
+  margin-top: 14px;
+}
+
+.converter-error {
+  margin-top: 14px;
+  padding: 9px 11px;
+  color: #ffd2d8;
+  background: rgba(112, 27, 49, 0.45);
+  border-left: 3px solid var(--red);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.converter-result {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 9px 11px;
+  color: var(--green);
+  background: rgba(28, 11, 52, 0.6);
+  border-left: 3px solid var(--green);
+}
+
+.converter-result > svg {
+  flex: none;
+}
+
+.converter-result__copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.converter-result__copy strong {
+  overflow: hidden;
+  color: var(--cream);
+  font-size: 11px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.converter-result__copy span {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.4;
 }

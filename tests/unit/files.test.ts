@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ImageSession } from '../../src/types';
 import {
+  buildConvertedName,
   buildDownloadName,
   exportExtension,
   exportMime,
@@ -54,6 +55,16 @@ describe('download names', () => {
     expect(buildDownloadName(session(name), 'webp')).toBe(
       `lowquality-${'a'.repeat(48)}.webp`,
     );
+  });
+
+  it('keeps converter filenames clean and unbranded', () => {
+    expect(buildConvertedName('My Photo (Final)!!.PNG', 'jpeg')).toBe(
+      'my-photo-final.jpg',
+    );
+    expect(buildConvertedName('Café déjà vu.webp', 'png')).toBe(
+      'cafe-deja-vu.png',
+    );
+    expect(buildConvertedName('✨✨✨.png', 'webp')).toBe('image.webp');
   });
 
   it('formats GIF durations for the preview meta line', () => {

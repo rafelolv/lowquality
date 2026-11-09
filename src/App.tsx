@@ -18,6 +18,7 @@ import { TextPanel } from "./components/TextPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { EmptyState } from "./components/EmptyState";
 import { ExportBar } from "./components/ExportBar";
+import { ConverterDialog } from "./components/ConverterDialog";
 import { HowItWorks } from "./components/HowItWorks";
 import { About } from "./components/About";
 import { ToastStack } from "./components/ToastStack";
@@ -172,6 +173,7 @@ export default function App() {
   const [exportStage, setExportStage] = useState("");
 
   const [notices, setNotices] = useState<NoticeMessage[]>([]);
+  const [converterOpen, setConverterOpen] = useState(false);
 
   const settings = useMemo(
     () => resolveSettings(quality, presetId, overrides),
@@ -203,6 +205,9 @@ export default function App() {
   const dismissNotice = useCallback((id: number) => {
     setNotices((previous) => previous.filter((notice) => notice.id !== id));
   }, []);
+
+  const openConverter = useCallback(() => setConverterOpen(true), []);
+  const closeConverter = useCallback(() => setConverterOpen(false), []);
 
   const replacePreview = useCallback((next: PreviewResult | null) => {
     const previous = previewRef.current;
@@ -1287,7 +1292,7 @@ export default function App() {
         <About />
       </main>
 
-      <Footer />
+      <Footer onOpenConverter={openConverter} />
       <ToastStack notices={notices} onDismiss={dismissNotice} />
 
       {gifScalePending && (
@@ -1297,6 +1302,8 @@ export default function App() {
           onConfirm={handleGifScaleConfirm}
         />
       )}
+
+      {converterOpen && <ConverterDialog onClose={closeConverter} />}
     </div>
   );
 }
