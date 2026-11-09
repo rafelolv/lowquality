@@ -31,11 +31,16 @@ function makeFrame(
 }
 
 describe("GIF timing helpers", () => {
-  it("normalises GIF delays into safe 10ms increments", () => {
+  it("matches browser playback for very short GIF delays", () => {
     expect(normalizeGifDelay(0)).toBe(100);
     expect(normalizeGifDelay(Number.NaN)).toBe(100);
     expect(normalizeGifDelay(-30)).toBe(100);
-    expect(normalizeGifDelay(5)).toBe(20);
+    // Browsers clamp frames of 10ms or less to 100ms.
+    expect(normalizeGifDelay(5)).toBe(100);
+    expect(normalizeGifDelay(10)).toBe(100);
+    expect(normalizeGifDelay(14)).toBe(100);
+    // Real GIF delays are centiseconds, so these are already safe.
+    expect(normalizeGifDelay(15)).toBe(20);
     expect(normalizeGifDelay(24)).toBe(20);
     expect(normalizeGifDelay(27)).toBe(30);
     expect(normalizeGifDelay(200)).toBe(200);

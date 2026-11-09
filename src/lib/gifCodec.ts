@@ -3,11 +3,17 @@ import { decompressFrame, type ParsedFrame, type ParsedGif } from "gifuct-js";
 import { assertGifSourceSize } from "./constants";
 import { hasTransparency } from "./effects";
 
-export const GIF_MIN_DELAY = 20;
+/**
+ * Browsers display GIF frames of 10ms or less for 100ms. Matching that clamp
+ * keeps exported animations at the same speed as the original file.
+ */
+export const GIF_MIN_DELAY = 10;
+export const GIF_DEFAULT_DELAY = 100;
 
 export function normalizeGifDelay(delay: number): number {
-  if (!Number.isFinite(delay) || delay <= 0) return 100;
-  return Math.max(GIF_MIN_DELAY, Math.round(delay / 10) * 10);
+  if (!Number.isFinite(delay) || delay <= 0) return GIF_DEFAULT_DELAY;
+  const rounded = Math.round(delay / 10) * 10;
+  return rounded <= GIF_MIN_DELAY ? GIF_DEFAULT_DELAY : rounded;
 }
 
 interface ApplicationFrame {

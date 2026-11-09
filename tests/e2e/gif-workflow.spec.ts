@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { expect, test } from '@playwright/test';
 import { decompressFrames, parseGIF } from 'gifuct-js';
+const { GIFEncoder } = createRequire(import.meta.url)(
+  'gifenc',
+) as typeof import('gifenc');
 import { uploadFixture, waitForPreview } from './helpers';
 
 function arrayBufferOf(bytes: Buffer): ArrayBuffer {
@@ -39,6 +43,45 @@ test.describe('animated GIF workflow', () => {
     await page.getByRole('button', { name: 'Play animation' }).click();
     await expect(page.locator('.playback-control__mode')).toHaveText('Playing');
     await expect(page.locator('.playback-control')).toContainText(/[1-6]\/6/);
+  });
+
+  test('exports 10ms frames at the 100ms browser playback speed', async ({
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(120_000);
+
+    const encoder = GIFEncoder();
+    for (let index = 0; index < 2; index += 1) {
+      encoder.writeFrame(new Uint8Array(8 * 8).fill(index), 8, 8, {
+        palette: [
+          [255, 0, 0],
+          [0, 0, 255],
+        ],
+        delay: 10,
+        repeat: index === 0 ? 0 : -1,
+      });
+    }
+    encoder.finish();
+
+    await page.goto('/');
+    await page.getByTestId('file-input').setInputFiles({
+      name: 'fast.gif',
+      mimeType: 'image/gif',
+      buffer: Buffer.from(encoder.bytes()),
+    });
+    await waitForPreview(page);
+    // Browsers clamp 10ms frames to 100ms, so two frames should report 0.2s.
+    await expect(page.locator('.preview-panel__meta')).toContainText('0.2s');
+
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByTestId('download-disaster').click();
+    const download = await downloadPromise;
+    const gifPath = testInfo.outputPath('fast.gif');
+    await download.saveAs(gifPath);
+
+    const parsed = parseGIF(arrayBufferOf(readFileSync(gifPath)));
+    const frames = decompressFrames(parsed, true);
+    expect(frames.map((frame) => frame.delay)).toEqual([100, 100]);
   });
 
   test('labels a single-frame GIF without animation controls', async ({ page }) => {
