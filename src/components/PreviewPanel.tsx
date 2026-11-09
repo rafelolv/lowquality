@@ -87,6 +87,7 @@ export function PreviewPanel({
   const [split, setSplit] = useState(50);
   const [playing, setPlaying] = useState(!reducedMotion);
   const [frameIndex, setFrameIndex] = useState(0);
+  const [originalReplayKey, setOriginalReplayKey] = useState(0);
 
   const frames = preview?.frames ?? [];
   const frameCount = frames.length;
@@ -111,6 +112,16 @@ export function PreviewPanel({
     completedLoopsRef.current = 0;
     setFrameIndex(0);
   }, [preview]);
+
+  // The native <img> GIF runs on its own clock. Restart both timelines when
+  // comparison starts or a new destroyed preview replaces the frames, so the
+  // two sides do not drift into different moments of the animation.
+  useEffect(() => {
+    if (!isGif || viewMode !== "compare") return;
+    completedLoopsRef.current = 0;
+    setFrameIndex(0);
+    setOriginalReplayKey((key) => key + 1);
+  }, [isGif, preview, session.sessionId, viewMode]);
 
   // Draw the untouched source on its own canvas.
   useEffect(() => {
@@ -346,11 +357,18 @@ export function PreviewPanel({
                 />
               ) : (
                 <img
+                  key={`${session.sessionId}-${originalReplayKey}`}
                   src={session.originalUrl}
                   alt="Original animated GIF"
                   className="preview-canvas preview-canvas--img"
                   draggable={false}
                   data-testid="original-gif"
+                  data-replay={originalReplayKey}
+                  onLoad={() => {
+                    if (viewMode !== "compare") return;
+                    completedLoopsRef.current = 0;
+                    setFrameIndex(0);
+                  }}
                 />
               )}
             </div>

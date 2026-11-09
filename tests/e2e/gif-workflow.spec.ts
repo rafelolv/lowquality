@@ -45,6 +45,34 @@ test.describe('animated GIF workflow', () => {
     await expect(page.locator('.playback-control')).toContainText(/[1-6]\/6/);
   });
 
+  test('restarts both GIF timelines when comparison starts', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await uploadFixture(page, 'dance.gif');
+    await waitForPreview(page);
+
+    const playback = page.locator('.playback-control');
+    await expect(playback).toContainText(/[4-6]\/6/);
+
+    const original = page.getByTestId('original-gif');
+    const replayBefore = Number(await original.getAttribute('data-replay'));
+
+    await page
+      .locator('.view-tabs')
+      .getByRole('button', { name: 'Compare' })
+      .click();
+
+    // The native GIF is remounted so it starts from frame one again.
+    await expect(original).toHaveAttribute(
+      'data-replay',
+      String(replayBefore + 1),
+    );
+    // The destroyed timeline restarts with it instead of keeping its old phase.
+    await expect(playback).toContainText(/[1-3]\/6/);
+    await expect(playback).toContainText(/[4-6]\/6/, { timeout: 2_000 });
+  });
+
   test('exports 10ms frames at the 100ms browser playback speed', async ({
     page,
   }, testInfo) => {
