@@ -541,7 +541,8 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
 
         <p className="dialog__privacy">
           <LockKeyhole size={12} aria-hidden="true" />
-          Everything stays in this tab. No uploads, no accounts, no damage.
+          Everything stays in this tab. No server uploads, no accounts, no
+          damage.
         </p>
       </div>
     </div>

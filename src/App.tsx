@@ -1086,7 +1086,7 @@ export default function App() {
         <div className="ticker__track">
           {Array.from({ length: 4 }, (_, index) => (
             <span key={index}>
-              NO UPLOADS <b>✦</b> NO ACCOUNTS <b>✦</b> NO MERCY <b>✦</b> PIXELS
+              STAYS LOCAL <b>✦</b> NO ACCOUNTS <b>✦</b> NO MERCY <b>✦</b> PIXELS
               WERE HARMED <b>✦</b>
             </span>
           ))}

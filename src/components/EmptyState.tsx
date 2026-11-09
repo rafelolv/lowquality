@@ -148,7 +148,7 @@ export function EmptyState({
         </div>
         <p className="sample-demo__foot">
           Original sample artwork, bundled locally and licensed with this project. No
-          uploads, no stock-photo mystery.
+          stock-photo mystery.
         </p>
       </section>
     </div>

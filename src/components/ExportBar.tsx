@@ -153,7 +153,7 @@ export function ExportBar({
         <span className="export-bar__filename" title={filename}>
           {filename}
         </span>
-        <span>No uploads. No accounts. No mercy.</span>
+        <span>No server uploads. No accounts. No mercy.</span>
       </div>
     </section>
   );
