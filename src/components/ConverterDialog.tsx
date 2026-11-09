@@ -359,6 +359,7 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
 
         <input
           ref={inputRef}
+          id="converter-file-input"
           type="file"
           className="visually-hidden"
           accept={ACCEPT}
@@ -398,6 +399,7 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
           </div>
         ) : (
           <label
+            htmlFor="converter-file-input"
             className={`dropzone converter-drop${
               dragActive ? " dropzone--active" : ""
             }${busy === "loading" ? " dropzone--busy" : ""}`}

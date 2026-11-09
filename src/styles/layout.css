@@ -734,8 +734,12 @@
   padding-top: 7px;
 }
 
-.site-footer__nav a {
+.site-footer__nav a,
+.site-footer__nav button {
+  padding: 0;
   color: var(--lavender);
+  background: transparent;
+  border: 0;
   font-family: var(--font-pixel);
   font-size: 6px;
   line-height: 1.7;
@@ -743,7 +747,12 @@
   text-transform: uppercase;
 }
 
-.site-footer__nav a:hover {
+.site-footer__nav button {
+  cursor: pointer;
+}
+
+.site-footer__nav a:hover,
+.site-footer__nav button:hover {
   color: var(--yellow);
 }
 

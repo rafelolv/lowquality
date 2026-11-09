@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { fixture } from "./helpers";
 
-test.describe("secret converter", () => {
+test.describe("image converter", () => {
   test("converts one image to multiple formats without touching the editor", async ({
     page,
   }, testInfo) => {
@@ -15,9 +15,11 @@ test.describe("secret converter", () => {
       dialog.getByRole("heading", { name: "Just convert it." }),
     ).toBeVisible();
 
-    await dialog
-      .getByTestId("converter-file-input")
-      .setInputFiles(fixture("transparent.png"));
+    // Clicking the dropzone itself must open the browser file picker.
+    const fileChooserPromise = page.waitForEvent("filechooser");
+    await dialog.locator(".converter-drop").click();
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles(fixture("transparent.png"));
 
     const convert = dialog.getByTestId("converter-convert");
     await expect(convert).toBeEnabled({ timeout: 30_000 });

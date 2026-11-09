@@ -56,6 +56,14 @@ export function Footer({ onOpenConverter }: FooterProps) {
 
         <nav className="site-footer__nav" aria-label="Footer navigation">
           <a href="#editor">Editor</a>
+          <button
+            type="button"
+            onClick={onOpenConverter}
+            title="Convert an image without destroying it"
+            data-testid="open-converter"
+          >
+            Converter
+          </button>
           <a href="#how-it-works">How It Works</a>
           <a href="#about">About</a>
         </nav>
@@ -73,8 +81,7 @@ export function Footer({ onOpenConverter }: FooterProps) {
               className="site-footer__mercy"
               onClick={onOpenConverter}
               title="Psst. Some mercy: convert an image without the damage."
-              aria-label="Open the secret image converter"
-              data-testid="open-converter"
+              aria-label="Open the image converter from the secret shortcut"
             >
               No mercy.
             </button>
