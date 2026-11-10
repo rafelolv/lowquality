@@ -1,7 +1,7 @@
 {
   "name": "lowquality",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.3.0",
   "type": "module",
   "description": "A privacy-friendly browser tool that intentionally destroys image quality.",
   "license": "MIT",
