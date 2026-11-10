@@ -26,7 +26,8 @@ export function ToolboxPage({
   hash: string;
   onOpenTool: (mode: ToolMode) => void;
 }) {
-  const tool = tools.find((item) => `#toolbox/${item.id}` === hash)?.id;
+  const activeTool = tools.find((item) => `#toolbox/${item.id}` === hash);
+  const tool = activeTool?.id;
   const [file, setFile] = useState<File | null>(null);
   const [source, setSource] = useState<Result | null>(null);
   const [options, setOptions] = useState<Options>(defaults);
@@ -232,8 +233,22 @@ export function ToolboxPage({
       {!tool ? (
         <ToolboxCards onOpenTool={onOpenTool} />
       ) : (
-        <>
-          <h2>{tools.find((item) => item.id === tool)?.name}</h2>
+        <section
+          className="toolkit-tool-shell"
+          aria-labelledby="toolkit-tool-title"
+        >
+          <header className="toolkit-tool-heading">
+            {activeTool && (
+              <span className="dialog__icon" aria-hidden="true">
+                <activeTool.icon size={24} />
+              </span>
+            )}
+            <div className="toolkit-tool-heading__copy">
+              <p className="eyebrow">The mercy department · Stays local</p>
+              <h2 id="toolkit-tool-title">{activeTool?.name}</h2>
+              <p>{activeTool?.description}</p>
+            </div>
+          </header>
           {tool === "batch" ? (
             <Batch />
           ) : (
@@ -430,7 +445,7 @@ export function ToolboxPage({
               )}
             </div>
           )}
-        </>
+        </section>
       )}
     </main>
   );

@@ -1,6 +1,35 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { fixture, horizontalOverflow } from "./helpers";
+test("all Toolbox tools use the shared raised work surface", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const [route, title] of [
+    ["resize", "Resize & Crop"],
+    ["batch", "Batch"],
+    ["metadata", "Metadata"],
+    ["favicon", "Favicon"],
+    ["redact", "Redact"],
+    ["gif", "GIF Kit"],
+  ]) {
+    await page.goto(`/#toolbox/${route}`);
+    const shell = page.locator(".toolkit-tool-shell");
+    await expect(shell).toBeVisible();
+    await expect(
+      shell.getByRole("heading", { name: title, exact: true }),
+    ).toBeVisible();
+    const style = await shell.evaluate((element) => {
+      const { backgroundColor, borderTopWidth, borderRadius, boxShadow } =
+        getComputedStyle(element);
+      return { backgroundColor, borderTopWidth, borderRadius, boxShadow };
+    });
+    expect(style.backgroundColor).toBe("rgb(53, 27, 96)");
+    expect(style.borderTopWidth).toBe("3px");
+    expect(style.borderRadius).toBe("4px");
+    expect(style.boxShadow).toContain("6px 6px");
+    expect(await horizontalOverflow(page)).toBe(0);
+  }
+});
+
 test("Convert and Compress are purple feature cards in the Toolbox grid", async ({
   page,
 }) => {
