@@ -26,7 +26,7 @@ export function ToolsSection({ onOpenTool }: ToolsSectionProps) {
         </div>
 
         <a className="button" href="#toolbox">Open Toolbox</a>
-        <div className="tools-grid">
+        <div className="tools-grid tools-grid--features">
           <button
             type="button"
             className="panel tool-card"
@@ -38,8 +38,7 @@ export function ToolsSection({ onOpenTool }: ToolsSectionProps) {
             </span>
             <span className="tool-card__title">Convert</span>
             <span className="tool-card__body">
-              Move stills between PNG, JPG and WebP with no intentional damage.
-              Alpha stays alpha.
+              Convert PNG, JPG and WebP locally. JPG and WebP can be lossy.
             </span>
             <span className="tool-card__cta">Open converter →</span>
           </button>
@@ -58,9 +57,8 @@ export function ToolsSection({ onOpenTool }: ToolsSectionProps) {
             </span>
             <span className="tool-card__title">Compress</span>
             <span className="tool-card__body">
-              Pick a percentage, a fixed budget or a custom MB target. Cap the
-              resolution and set a quality floor; pixels only shrink when the
-              size demands it.
+              Set a size target, quality floor and resolution cap. Pixels shrink
+              only when the target demands it.
             </span>
             <span className="tool-card__cta">Open compressor →</span>
           </button>

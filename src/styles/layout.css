@@ -1561,6 +1561,14 @@
   margin: 0 auto;
 }
 
+.tools-grid--features {
+  max-width: 720px;
+}
+
+.tools-grid--features .tool-card {
+  aspect-ratio: 1;
+}
+
 .tool-card {
   display: flex;
   flex-direction: column;

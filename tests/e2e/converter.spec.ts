@@ -2,6 +2,33 @@ import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { fixture } from "./helpers";
 
+test("Convert and Compress are square feature cards on desktop and mobile", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const cards = page.locator(".tools-grid--features .tool-card");
+  await expect(cards).toHaveCount(2);
+
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await cards.first().scrollIntoViewIfNeeded();
+    const dimensions = await cards.evaluateAll((elements) =>
+      elements.map((element) => {
+        const { width, height } = element.getBoundingClientRect();
+        return { width, height };
+      }),
+    );
+    for (const { width: cardWidth, height: cardHeight } of dimensions)
+      expect(Math.abs(cardWidth - cardHeight)).toBeLessThanOrEqual(1);
+  }
+
+  await page.getByTestId("open-converter-card").click();
+  await expect(page.getByTestId("converter-dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByTestId("open-compressor-card").click();
+  await expect(page.getByTestId("converter-dialog")).toBeVisible();
+});
+
 test.describe("image converter", () => {
   test("converts one image to multiple formats without touching the editor", async ({
     page,
