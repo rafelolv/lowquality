@@ -41,6 +41,7 @@ test.describe("image converter", () => {
     await expect(
       dialog.getByRole("heading", { name: "Just convert it." }),
     ).toBeVisible();
+    await expect(dialog).not.toHaveClass(/converter-dialog--toolbox/);
 
     // Clicking the dropzone itself must open the browser file picker.
     const fileChooserPromise = page.waitForEvent("filechooser");

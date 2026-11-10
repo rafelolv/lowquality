@@ -1149,6 +1149,27 @@
   width: min(600px, 100%);
 }
 
+.converter-dialog--toolbox {
+  background: var(--panel-raised);
+  border: 3px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: 6px 6px 0 var(--line);
+}
+
+.converter-dialog--toolbox .dialog__icon {
+  background: var(--yellow);
+}
+
+.converter-dialog--toolbox .tool-switch {
+  background: var(--panel-deep);
+  border-color: var(--line-soft);
+}
+
+.converter-dialog--toolbox .tool-switch__button--active {
+  background: var(--violet-deep);
+  border-color: var(--lavender);
+}
+
 .converter-dialog__icon {
   background: var(--green);
 }

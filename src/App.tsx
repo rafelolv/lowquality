@@ -184,6 +184,7 @@ export default function App() {
 
   const [notices, setNotices] = useState<NoticeMessage[]>([]);
   const [toolMode, setToolMode] = useState<ToolMode | null>(null);
+  const [toolboxDialog, setToolboxDialog] = useState(false);
 
   const settings = useMemo(
     () => resolveSettings(quality, presetId, overrides),
@@ -216,10 +217,26 @@ export default function App() {
     setNotices((previous) => previous.filter((notice) => notice.id !== id));
   }, []);
 
-  const openConverter = useCallback(() => setToolMode("convert"), []);
-  const openCompressor = useCallback(() => setToolMode("compress"), []);
-  const openTool = useCallback((mode: ToolMode) => setToolMode(mode), []);
-  const closeTool = useCallback(() => setToolMode(null), []);
+  const openConverter = useCallback(() => {
+    setToolboxDialog(false);
+    setToolMode("convert");
+  }, []);
+  const openCompressor = useCallback(() => {
+    setToolboxDialog(false);
+    setToolMode("compress");
+  }, []);
+  const openTool = useCallback((mode: ToolMode) => {
+    setToolboxDialog(false);
+    setToolMode(mode);
+  }, []);
+  const openToolboxTool = useCallback((mode: ToolMode) => {
+    setToolboxDialog(true);
+    setToolMode(mode);
+  }, []);
+  const closeTool = useCallback(() => {
+    setToolMode(null);
+    setToolboxDialog(false);
+  }, []);
 
   const replacePreview = useCallback((next: PreviewResult | null) => {
     const previous = previewRef.current;
@@ -1118,7 +1135,7 @@ export default function App() {
         </div>
       </div>
 
-      {isToolbox && <ToolboxPage hash={hash} onOpenTool={openTool} />}
+      {isToolbox && <ToolboxPage hash={hash} onOpenTool={openToolboxTool} />}
       <main hidden={isToolbox}>
         <div className="container">
           <section className="hero" aria-labelledby="hero-heading">
@@ -1334,7 +1351,11 @@ export default function App() {
       )}
 
       {toolMode && (
-        <ConverterDialog initialMode={toolMode} onClose={closeTool} />
+        <ConverterDialog
+          initialMode={toolMode}
+          onClose={closeTool}
+          toolbox={toolboxDialog}
+        />
       )}
     </div>
   );

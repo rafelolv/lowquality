@@ -16,9 +16,19 @@ test("Convert and Compress are purple feature cards in the Toolbox grid", async 
 
   await page.getByTestId("toolbox-convert-card").click();
   await expect(page.getByTestId("converter-dialog")).toBeVisible();
+  await expect(page.getByTestId("converter-dialog")).toHaveClass(
+    /converter-dialog--toolbox/,
+  );
+  await page.getByTestId("tool-tab-compress").click();
+  await expect(page.getByTestId("converter-dialog")).toHaveClass(
+    /converter-dialog--toolbox/,
+  );
   await page.keyboard.press("Escape");
   await page.getByTestId("toolbox-compress-card").click();
   await expect(page.getByTestId("converter-dialog")).toBeVisible();
+  await expect(page.getByTestId("converter-dialog")).toHaveClass(
+    /converter-dialog--toolbox/,
+  );
 });
 
 async function upload(

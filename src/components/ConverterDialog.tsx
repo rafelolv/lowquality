@@ -56,6 +56,7 @@ type RangeStyle = CSSProperties & { "--range-progress": string };
 interface ConverterDialogProps {
   initialMode?: ToolMode;
   onClose: () => void;
+  toolbox?: boolean;
 }
 
 interface SourceState {
@@ -108,6 +109,7 @@ function formatLabel(format: ConvertFormat): string {
 export function ConverterDialog({
   initialMode = "convert",
   onClose,
+  toolbox = false,
 }: ConverterDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -471,7 +473,7 @@ export function ConverterDialog({
       }}
     >
       <div
-        className="dialog converter-dialog"
+        className={`dialog converter-dialog${toolbox ? " converter-dialog--toolbox" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="converter-title"
@@ -491,11 +493,16 @@ export function ConverterDialog({
           <X size={16} aria-hidden="true" />
         </button>
 
-        <span
-          className="dialog__icon converter-dialog__icon"
-          aria-hidden="true"
-        >
-          <Heart size={24} />
+        <span className="dialog__icon converter-dialog__icon" aria-hidden="true">
+          {toolbox ? (
+            mode === "convert" ? (
+              <ArrowLeftRight size={24} />
+            ) : (
+              <Minimize2 size={24} />
+            )
+          ) : (
+            <Heart size={24} />
+          )}
         </span>
 
         <div className="tool-switch" role="group" aria-label="Image tool">
