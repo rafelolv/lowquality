@@ -1,4 +1,5 @@
 import type {
+  CompressFormat,
   DegradationSettings,
   EnabledEffects,
   ExportFormat,
@@ -56,6 +57,13 @@ export interface ExportStaticRequest extends ProcessingBase {
   format: Exclude<ExportFormat, 'gif'>;
 }
 
+export interface CompressStaticRequest {
+  type: 'compress-static';
+  jobId: string;
+  format: CompressFormat;
+  targetBytes: number;
+}
+
 export interface ProcessGifPreviewRequest extends ProcessingBase {
   type: 'process-gif-preview';
   maxDimension: number;
@@ -81,6 +89,7 @@ export type WorkerRequest =
   | ResetRequest
   | ProcessStaticPreviewRequest
   | ExportStaticRequest
+  | CompressStaticRequest
   | ProcessGifPreviewRequest
   | ExportGifRequest
   | ExportGifStillRequest;
@@ -119,6 +128,18 @@ export interface ExportBlobResponse {
   mime: string;
 }
 
+export interface CompressedBlobResponse {
+  type: 'compressed-blob';
+  jobId: string;
+  blob: Blob;
+  mime: string;
+  width: number;
+  height: number;
+  quality: number;
+  attempts: number;
+  hitTarget: boolean;
+}
+
 export interface ProgressResponse {
   type: 'progress';
   jobId: string;
@@ -149,6 +170,7 @@ export type WorkerResponse =
   | PreviewStaticResponse
   | PreviewGifResponse
   | ExportBlobResponse
+  | CompressedBlobResponse
   | ProgressResponse
   | ErrorResponse
   | CancelledResponse

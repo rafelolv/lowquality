@@ -5,6 +5,7 @@ import { GITHUB_URL } from '../lib/site';
 
 const navigation = [
   { href: '#editor', label: 'Editor', active: true },
+  { href: '#tools', label: 'Tools' },
   { href: '#how-it-works', label: 'How It Works' },
   { href: '#about', label: 'About' },
 ];

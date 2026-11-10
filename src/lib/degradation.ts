@@ -314,6 +314,7 @@ export async function degradeImage(
 export async function encodeCanvas(
   canvas: OffscreenCanvas,
   format: "png" | "jpeg" | "webp",
+  quality?: number,
 ): Promise<Blob> {
   if (format === "jpeg") {
     // JPEG has no alpha. Flatten transparency onto a neutral white matte.
@@ -324,7 +325,7 @@ export async function encodeCanvas(
     context.drawImage(canvas, 0, 0);
     const blob = await flattened.convertToBlob({
       type: "image/jpeg",
-      quality: 0.92,
+      quality: quality ?? 0.92,
     });
     if (blob.type !== "image/jpeg") {
       throw new Error("JPEG export is not supported by this browser.");
@@ -333,7 +334,10 @@ export async function encodeCanvas(
   }
 
   const mime = format === "webp" ? "image/webp" : "image/png";
-  const blob = await canvas.convertToBlob({ type: mime });
+  const blob = await canvas.convertToBlob({
+    type: mime,
+    ...(quality === undefined ? {} : { quality }),
+  });
   if (blob.type !== mime) {
     throw new Error(
       format === "webp"

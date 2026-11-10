@@ -671,3 +671,9 @@
     height: 34px;
   }
 }
+
+@media (max-width: 760px) {
+  .tools-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

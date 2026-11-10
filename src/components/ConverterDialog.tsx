@@ -1,10 +1,12 @@
 import {
+  ArrowLeftRight,
   Check,
   Download,
   FileImage,
   Heart,
   Loader2,
   LockKeyhole,
+  Minimize2,
   RefreshCw,
   UploadCloud,
   X,
@@ -17,7 +19,7 @@ import {
   type ChangeEvent,
   type DragEvent,
 } from "react";
-import type { ExportFormat } from "../types";
+import type { CompressFormat, ExportFormat, ToolMode } from "../types";
 import { DEFAULT_ENABLED_EFFECTS, NEUTRAL_SETTINGS } from "../lib/presets";
 import {
   decodeStaticImage,
@@ -25,10 +27,20 @@ import {
   formatFileSize,
   validateStaticFile,
 } from "../lib/imageLoader";
-import { buildConvertedName, downloadBlob } from "../lib/files";
+import {
+  buildCompressedName,
+  buildConvertedName,
+  downloadBlob,
+} from "../lib/files";
+import {
+  compressionTargets,
+  defaultCompressionTarget,
+  reductionPercent,
+} from "../lib/compression";
 import {
   DestroyWorkerClient,
   WorkerJobCancelled,
+  type CompressStaticResult,
   type JobHandle,
   type JobProgress,
 } from "../lib/workerClient";
@@ -36,6 +48,7 @@ import {
 type ConvertFormat = Exclude<ExportFormat, "gif">;
 
 interface ConverterDialogProps {
+  initialMode?: ToolMode;
   onClose: () => void;
 }
 
@@ -53,10 +66,24 @@ interface ConvertedResult {
   format: ConvertFormat;
 }
 
+interface CompressedResult extends CompressStaticResult {
+  name: string;
+  format: CompressFormat;
+}
+
 const FORMATS: Array<{ id: ConvertFormat; label: string; note: string }> = [
   { id: "png", label: "PNG", note: "Lossless, keeps alpha" },
   { id: "jpeg", label: "JPG", note: "Smaller, white matte" },
   { id: "webp", label: "WebP", note: "Small and modern" },
+];
+
+const COMPRESS_FORMATS: Array<{
+  id: CompressFormat;
+  label: string;
+  note: string;
+}> = [
+  { id: "webp", label: "WebP", note: "Best size, keeps alpha" },
+  { id: "jpeg", label: "JPG", note: "Universal, white matte" },
 ];
 
 const ACCEPT =
@@ -65,31 +92,43 @@ const ACCEPT =
 function errorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
-    : "The converter hit an unexpected pixel problem.";
+    : "The image tool hit an unexpected pixel problem.";
 }
 
 function formatLabel(format: ConvertFormat): string {
   return FORMATS.find((item) => item.id === format)?.label ?? format;
 }
 
-export function ConverterDialog({ onClose }: ConverterDialogProps) {
+export function ConverterDialog({
+  initialMode = "convert",
+  onClose,
+}: ConverterDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const clientRef = useRef<DestroyWorkerClient | null>(null);
   const initJobRef = useRef<JobHandle<void> | null>(null);
   const exportJobRef = useRef<JobHandle<Blob> | null>(null);
+  const compressJobRef = useRef<JobHandle<CompressStaticResult> | null>(null);
   const tokenRef = useRef(0);
 
+  const [mode, setMode] = useState<ToolMode>(initialMode);
   const [source, setSource] = useState<SourceState | null>(null);
   const [format, setFormat] = useState<ConvertFormat>("png");
-  const [busy, setBusy] = useState<"loading" | "converting" | null>(null);
+  const [compressFormat, setCompressFormat] = useState<CompressFormat>("webp");
+  const [targetBytes, setTargetBytes] = useState(0);
+  const [busy, setBusy] = useState<
+    "loading" | "converting" | "compressing" | null
+  >(null);
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
   const [stage, setStage] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ConvertedResult | null>(null);
+  const [compressed, setCompressed] = useState<CompressedResult | null>(null);
   const [dragActive, setDragActive] = useState(false);
+
+  const targets = source ? compressionTargets(source.file.size) : [];
 
   const disposeWorker = useCallback(() => {
     tokenRef.current += 1;
@@ -97,6 +136,8 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
     initJobRef.current = null;
     exportJobRef.current?.cancel();
     exportJobRef.current = null;
+    compressJobRef.current?.cancel();
+    compressJobRef.current = null;
     clientRef.current?.dispose();
     clientRef.current = null;
   }, []);
@@ -164,6 +205,7 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
       setReady(false);
       setSource(null);
       setResult(null);
+      setCompressed(null);
       setError(null);
       setProgress(4);
       setStage("Reading the image");
@@ -178,7 +220,7 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
         const info = validateStaticFile(file);
         if (info.animated) {
           throw new Error(
-            "Animated GIFs need the main editor, where every frame survives. This converter is stills only.",
+            "Animated GIFs need the main editor, where every frame survives. These tools are stills only.",
           );
         }
 
@@ -196,6 +238,7 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
           height: image.height,
           hasAlpha: image.hasAlpha,
         });
+        setTargetBytes(defaultCompressionTarget(file.size));
         setProgress(32);
         setStage("Warming up the converter");
 
@@ -221,7 +264,7 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
         setReady(true);
         setBusy(null);
         setProgress(100);
-        setStage("Ready to convert");
+        setStage("Ready when you are");
       } catch (caught) {
         decoded?.bitmap.close();
         if (
@@ -248,6 +291,7 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
     setBusy("converting");
     setError(null);
     setResult(null);
+    setCompressed(null);
     setProgress(0);
     setStage("Warming up the encoder");
 
@@ -287,6 +331,62 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
       if (token === tokenRef.current) exportJobRef.current = null;
     }
   }, [busy, format, ready, source]);
+
+  const compress = useCallback(async () => {
+    if (!source || !ready || busy || !clientRef.current || !targetBytes) return;
+    const client = clientRef.current;
+    const token = tokenRef.current;
+    setBusy("compressing");
+    setError(null);
+    setResult(null);
+    setCompressed(null);
+    setProgress(0);
+    setStage("Measuring the pixels");
+
+    try {
+      const job = client.compressStatic(
+        { targetBytes, format: compressFormat },
+        (update: JobProgress) => {
+          if (token !== tokenRef.current) return;
+          setProgress(update.progress);
+          setStage(update.stage);
+        },
+      );
+      compressJobRef.current = job;
+      const output = await job.promise;
+      if (token !== tokenRef.current) return;
+
+      const name = buildCompressedName(source.file.name, compressFormat);
+      downloadBlob(output.blob, name);
+      setCompressed({ ...output, name, format: compressFormat });
+      setBusy(null);
+      setProgress(100);
+      setStage("Compressed");
+    } catch (caught) {
+      if (token !== tokenRef.current || caught instanceof WorkerJobCancelled) {
+        return;
+      }
+      setBusy(null);
+      setProgress(0);
+      setStage("");
+      setError(errorMessage(caught));
+    } finally {
+      if (token === tokenRef.current) compressJobRef.current = null;
+    }
+  }, [busy, compressFormat, ready, source, targetBytes]);
+
+  const switchMode = useCallback(
+    (next: ToolMode) => {
+      if (busy) return;
+      setMode(next);
+      setResult(null);
+      setCompressed(null);
+      setError(null);
+      setProgress(0);
+      setStage("");
+    },
+    [busy],
+  );
 
   const openFilePicker = useCallback(() => {
     if (busy) return;
@@ -338,7 +438,7 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
           type="button"
           className="dialog__close icon-button"
           onClick={handleClose}
-          aria-label="Close converter"
+          aria-label="Close image tools"
           ref={closeRef}
         >
           <X size={16} aria-hidden="true" />
@@ -350,11 +450,44 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
         >
           <Heart size={24} />
         </span>
-        <p className="eyebrow">A secret act of mercy</p>
-        <h2 id="converter-title">Just convert it.</h2>
+
+        <div className="tool-switch" role="group" aria-label="Image tool">
+          <button
+            type="button"
+            className={`tool-switch__button${
+              mode === "convert" ? " tool-switch__button--active" : ""
+            }`}
+            aria-pressed={mode === "convert"}
+            onClick={() => switchMode("convert")}
+            disabled={busy !== null}
+            data-testid="tool-tab-convert"
+          >
+            <ArrowLeftRight size={13} aria-hidden="true" />
+            Convert
+          </button>
+          <button
+            type="button"
+            className={`tool-switch__button${
+              mode === "compress" ? " tool-switch__button--active" : ""
+            }`}
+            aria-pressed={mode === "compress"}
+            onClick={() => switchMode("compress")}
+            disabled={busy !== null}
+            data-testid="tool-tab-compress"
+          >
+            <Minimize2 size={13} aria-hidden="true" />
+            Compress
+          </button>
+        </div>
+
+        <p className="eyebrow">The mercy department</p>
+        <h2 id="converter-title">
+          {mode === "convert" ? "Just convert it." : "Squeeze it gently."}
+        </h2>
         <p id="converter-desc" className="dialog__lede">
-          No destruction, no noise, no character-building artifacts. Pick an
-          image, choose a format, and keep the pixels you came with.
+          {mode === "convert"
+            ? "No destruction, no noise, no character-building artifacts. Pick an image, choose a format, and keep the pixels you came with."
+            : "Same image, less weight. Pick a target size and we keep the highest quality that still fits, only shrinking dimensions when the pixels demand it."}
         </p>
 
         <input
@@ -365,7 +498,7 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
           accept={ACCEPT}
           onChange={handleFileChange}
           disabled={busy !== null}
-          aria-label="Choose an image to convert"
+          aria-label="Choose an image to convert or compress"
           data-testid="converter-file-input"
         />
 
@@ -422,7 +555,7 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
             </strong>
             <span>
               {busy === "loading"
-                ? "Preparing the local converter…"
+                ? "Preparing the local tools…"
                 : "or click to browse. Stills only."}
             </span>
             <span className="dropzone__formats">
@@ -431,33 +564,109 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
           </label>
         )}
 
-        <fieldset className="converter-formats">
-          <legend>Output format</legend>
-          <div className="converter-formats__grid">
-            {FORMATS.map((item) => {
-              const active = format === item.id;
-              return (
-                <button
-                  type="button"
-                  key={item.id}
-                  className={`converter-format${
-                    active ? " converter-format--active" : ""
-                  }`}
-                  aria-pressed={active}
-                  onClick={() => {
-                    setFormat(item.id);
-                    setResult(null);
-                  }}
-                  disabled={!ready || busy !== null}
-                  data-testid={`converter-format-${item.id}`}
-                >
-                  <span className="converter-format__label">{item.label}</span>
-                  <span className="converter-format__note">{item.note}</span>
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
+        {mode === "convert" ? (
+          <fieldset className="converter-formats">
+            <legend>Output format</legend>
+            <div className="converter-formats__grid">
+              {FORMATS.map((item) => {
+                const active = format === item.id;
+                return (
+                  <button
+                    type="button"
+                    key={item.id}
+                    className={`converter-format${
+                      active ? " converter-format--active" : ""
+                    }`}
+                    aria-pressed={active}
+                    onClick={() => {
+                      setFormat(item.id);
+                      setResult(null);
+                    }}
+                    disabled={!ready || busy !== null}
+                    data-testid={`converter-format-${item.id}`}
+                  >
+                    <span className="converter-format__label">{item.label}</span>
+                    <span className="converter-format__note">{item.note}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        ) : (
+          <>
+            <fieldset className="converter-formats">
+              <legend>Compression format</legend>
+              <div className="converter-formats__grid">
+                {COMPRESS_FORMATS.map((item) => {
+                  const active = compressFormat === item.id;
+                  return (
+                    <button
+                      type="button"
+                      key={item.id}
+                      className={`converter-format${
+                        active ? " converter-format--active" : ""
+                      }`}
+                      aria-pressed={active}
+                      onClick={() => {
+                        setCompressFormat(item.id);
+                        setCompressed(null);
+                      }}
+                      disabled={!ready || busy !== null}
+                      data-testid={`compressor-format-${item.id}`}
+                    >
+                      <span className="converter-format__label">
+                        {item.label}
+                      </span>
+                      <span className="converter-format__note">{item.note}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+
+            <fieldset className="converter-formats">
+              <legend>Target size</legend>
+              <div
+                className="converter-formats__grid converter-formats__grid--targets"
+                data-testid="compressor-targets"
+              >
+                {targets.map((target) => {
+                  const active = targetBytes === target.bytes;
+                  const reduction = source
+                    ? reductionPercent(source.file.size, target.bytes)
+                    : 0;
+                  return (
+                    <button
+                      type="button"
+                      key={target.bytes}
+                      className={`converter-format${
+                        active ? " converter-format--active" : ""
+                      }`}
+                      aria-pressed={active}
+                      onClick={() => {
+                        setTargetBytes(target.bytes);
+                        setCompressed(null);
+                      }}
+                      disabled={!ready || busy !== null}
+                      data-testid={`compressor-target-${target.bytes}`}
+                    >
+                      <span className="converter-format__label">
+                        {target.label}
+                      </span>
+                      <span className="converter-format__note">
+                        {reduction}% smaller
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="converter-hint">
+                Quality first: the encoder drops before the dimensions do, and
+                only by as much as the target needs.
+              </p>
+            </fieldset>
+          </>
+        )}
 
         {busy !== null && (
           <div
@@ -470,7 +679,11 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
             </div>
             <span className="export-progress__stage">
               {stage ||
-                (busy === "loading" ? "Reading the image" : "Converting")}
+                (busy === "loading"
+                  ? "Reading the image"
+                  : mode === "compress"
+                    ? "Compressing"
+                    : "Converting")}
             </span>
             <span className="export-progress__percent">
               {Math.round(progress)}%
@@ -506,6 +719,40 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
           </div>
         )}
 
+        {compressed && source && (
+          <div
+            className="converter-result converter-result--compressed"
+            role="status"
+            data-testid="compressor-result"
+          >
+            <Check size={18} aria-hidden="true" />
+            <div className="converter-result__copy">
+              <strong title={compressed.name}>{compressed.name}</strong>
+              <span>
+                {formatFileSize(source.file.size)} →{" "}
+                {formatFileSize(compressed.blob.size)} ·{" "}
+                {reductionPercent(source.file.size, compressed.blob.size)}%
+                smaller
+              </span>
+              <span className="converter-result__detail">
+                {formatLabel(compressed.format)} · quality{" "}
+                {Math.round(compressed.quality * 100)}% ·{" "}
+                {formatDimensions(compressed.width, compressed.height)}
+                {compressed.hitTarget ? "" : " · best effort"}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="button button--ghost button--small"
+              onClick={() => downloadBlob(compressed.blob, compressed.name)}
+              disabled={busy !== null}
+            >
+              <Download size={14} aria-hidden="true" />
+              Download again
+            </button>
+          </div>
+        )}
+
         <div className="dialog__actions">
           <button
             type="button"
@@ -519,12 +766,15 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
             className="button button--primary"
             onClick={() => {
               if (actionIsRetry) retry();
-              else void convert();
+              else if (mode === "convert") void convert();
+              else void compress();
             }}
             disabled={actionDisabled}
-            data-testid="converter-convert"
+            data-testid={
+              mode === "convert" ? "converter-convert" : "compressor-compress"
+            }
           >
-            {busy === "converting" ? (
+            {busy === "converting" || busy === "compressing" ? (
               <Loader2 className="spin" size={16} aria-hidden="true" />
             ) : (
               <Download size={16} aria-hidden="true" />
@@ -532,9 +782,13 @@ export function ConverterDialog({ onClose }: ConverterDialogProps) {
             <span>
               {busy === "converting"
                 ? "CONVERTING…"
-                : actionIsRetry
-                  ? "TRY AGAIN"
-                  : "CONVERT & DOWNLOAD"}
+                : busy === "compressing"
+                  ? "COMPRESSING…"
+                  : actionIsRetry
+                    ? "TRY AGAIN"
+                    : mode === "convert"
+                      ? "CONVERT & DOWNLOAD"
+                      : "COMPRESS & DOWNLOAD"}
             </span>
           </button>
         </div>

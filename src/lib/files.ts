@@ -50,6 +50,13 @@ export function buildConvertedName(
   return `${safeBaseName(sourceName)}.${exportExtension(format)}`;
 }
 
+export function buildCompressedName(
+  sourceName: string,
+  format: Exclude<ExportFormat, 'png' | 'gif'>,
+): string {
+  return `${safeBaseName(sourceName)}-compressed.${exportExtension(format)}`;
+}
+
 export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');

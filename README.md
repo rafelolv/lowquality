@@ -4,7 +4,7 @@
 
 <p><a href="https://rafelolv.github.io/lowquality/">Try it live ↗</a></p>
 
-LowQuality is a browser-only image destruction studio. Drop in a JPEG, PNG, WebP, BMP, AVIF, SVG, or animated GIF, crank the **HOW BAD?** slider, and download the evidence. Every pixel is processed inside the tab: there is no backend, no account, no upload, and no analytics.
+LowQuality is a browser-only image destruction studio. Drop in a JPEG, PNG, WebP, BMP, AVIF, SVG, or animated GIF, crank the **HOW BAD?** slider, and download the evidence. Every pixel is processed inside the tab: there is no backend, no account, no server upload, and no analytics.
 
 The interface is a deliberately unsubtle retro 8-bit console: dark purple checkerboard, thick violet panels, gold buttons, pixel typography, a tiny skyline, and Bitrot the mascot.
 
@@ -24,6 +24,8 @@ The interface is a deliberately unsubtle retro 8-bit console: dark purple checke
 - **Reset edits** restores the original pixels and removes added text while keeping the loaded file. Clear removes the file entirely.
 - **Live preview** with original/result/compare modes, playback for GIFs, fit-to-window zoom, and a draggable text box.
 - **Exports:** PNG, JPG, WebP, and animated GIF. Copying a destroyed PNG to the clipboard is supported where the browser allows it.
+- **Mercy tools:** convert stills between PNG, JPG, and WebP without applying any degradation.
+- **Target-size compressor:** pick a file-size goal and the worker searches for the highest WebP or JPG quality that fits, reducing dimensions only when the target cannot be reached at full resolution.
 - **Safe limits and scaling options** before a GIF can exhaust memory.
 - **Responsive, keyboard-friendly, accessible UI** with reduced-motion support. Uploading compacts the header and focuses the editor. Preview and HOW BAD? stay together, presets use a compact grid, the desktop studio follows expanded controls, and mobile download/copy/progress/cancel actions stay in a bottom dock.
 - **No remote runtime requests** beyond loading the page, its locally bundled fonts, and the bundled sample artwork.

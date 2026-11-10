@@ -1,4 +1,5 @@
 import type {
+  CompressFormat,
   DegradationSettings,
   EnabledEffects,
   ExportFormat,
@@ -7,6 +8,7 @@ import type {
   WorkerErrorCode,
 } from '../types';
 import type {
+  CompressStaticRequest,
   DecodeGifRequest,
   ExportGifRequest,
   ExportGifStillRequest,
@@ -69,6 +71,20 @@ export interface ExportStaticPayload {
   settings: DegradationSettings;
   enabled: EnabledEffects;
   format: Exclude<ExportFormat, 'gif'>;
+}
+
+export interface CompressStaticPayload {
+  targetBytes: number;
+  format: CompressFormat;
+}
+
+export interface CompressStaticResult {
+  blob: Blob;
+  width: number;
+  height: number;
+  quality: number;
+  attempts: number;
+  hitTarget: boolean;
 }
 
 export interface ExportGifPayload {
@@ -154,6 +170,16 @@ export class DestroyWorkerClient {
         break;
       case 'export-blob':
         job.resolve(response.blob);
+        break;
+      case 'compressed-blob':
+        job.resolve({
+          blob: response.blob,
+          width: response.width,
+          height: response.height,
+          quality: response.quality,
+          attempts: response.attempts,
+          hitTarget: response.hitTarget,
+        } satisfies CompressStaticResult);
         break;
       case 'error':
         job.reject(new WorkerJobError(response.message, response.code));
@@ -311,6 +337,21 @@ export class DestroyWorkerClient {
         jobId,
         ...payload,
       } satisfies ExportStaticRequest),
+      [],
+      onProgress,
+    );
+  }
+
+  compressStatic(
+    payload: CompressStaticPayload,
+    onProgress?: (progress: JobProgress) => void,
+  ): JobHandle<CompressStaticResult> {
+    return this.startJob<CompressStaticResult>(
+      (jobId) => ({
+        type: 'compress-static',
+        jobId,
+        ...payload,
+      } satisfies CompressStaticRequest),
       [],
       onProgress,
     );

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ImageSession } from '../../src/types';
 import {
+  buildCompressedName,
   buildConvertedName,
   buildDownloadName,
   exportExtension,
@@ -65,6 +66,18 @@ describe('download names', () => {
       'cafe-deja-vu.png',
     );
     expect(buildConvertedName('✨✨✨.png', 'webp')).toBe('image.webp');
+  });
+
+  it('marks compressor output without branding it', () => {
+    expect(buildCompressedName('My Photo (Final)!!.PNG', 'webp')).toBe(
+      'my-photo-final-compressed.webp',
+    );
+    expect(buildCompressedName('Café déjà vu.jpeg', 'jpeg')).toBe(
+      'cafe-deja-vu-compressed.jpg',
+    );
+    expect(buildCompressedName('✨✨✨.png', 'webp')).toBe(
+      'image-compressed.webp',
+    );
   });
 
   it('formats GIF durations for the preview meta line', () => {

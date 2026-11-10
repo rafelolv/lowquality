@@ -163,6 +163,8 @@ export interface PreviewResult {
 
 export type ViewMode = 'original' | 'result' | 'compare';
 export type ExportFormat = 'png' | 'jpeg' | 'webp' | 'gif';
+export type CompressFormat = 'jpeg' | 'webp';
+export type ToolMode = 'convert' | 'compress';
 
 export interface NoticeMessage {
   id: number;

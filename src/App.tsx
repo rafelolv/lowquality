@@ -19,6 +19,7 @@ import { PreviewPanel } from "./components/PreviewPanel";
 import { EmptyState } from "./components/EmptyState";
 import { ExportBar } from "./components/ExportBar";
 import { ConverterDialog } from "./components/ConverterDialog";
+import { ToolsSection } from "./components/ToolsSection";
 import { HowItWorks } from "./components/HowItWorks";
 import { About } from "./components/About";
 import { ToastStack } from "./components/ToastStack";
@@ -38,6 +39,7 @@ import type {
   SettingsOverrides,
   StaticSession,
   TextLayer,
+  ToolMode,
   ViewMode,
 } from "./types";
 import {
@@ -173,7 +175,7 @@ export default function App() {
   const [exportStage, setExportStage] = useState("");
 
   const [notices, setNotices] = useState<NoticeMessage[]>([]);
-  const [converterOpen, setConverterOpen] = useState(false);
+  const [toolMode, setToolMode] = useState<ToolMode | null>(null);
 
   const settings = useMemo(
     () => resolveSettings(quality, presetId, overrides),
@@ -206,8 +208,10 @@ export default function App() {
     setNotices((previous) => previous.filter((notice) => notice.id !== id));
   }, []);
 
-  const openConverter = useCallback(() => setConverterOpen(true), []);
-  const closeConverter = useCallback(() => setConverterOpen(false), []);
+  const openConverter = useCallback(() => setToolMode("convert"), []);
+  const openCompressor = useCallback(() => setToolMode("compress"), []);
+  const openTool = useCallback((mode: ToolMode) => setToolMode(mode), []);
+  const closeTool = useCallback(() => setToolMode(null), []);
 
   const replacePreview = useCallback((next: PreviewResult | null) => {
     const previous = previewRef.current;
@@ -1288,11 +1292,15 @@ export default function App() {
           </section>
         </div>
 
+        <ToolsSection onOpenTool={openTool} />
         <HowItWorks />
         <About />
       </main>
 
-      <Footer onOpenConverter={openConverter} />
+      <Footer
+        onOpenConverter={openConverter}
+        onOpenCompressor={openCompressor}
+      />
       <ToastStack notices={notices} onDismiss={dismissNotice} />
 
       {gifScalePending && (
@@ -1303,7 +1311,9 @@ export default function App() {
         />
       )}
 
-      {converterOpen && <ConverterDialog onClose={closeConverter} />}
+      {toolMode && (
+        <ConverterDialog initialMode={toolMode} onClose={closeTool} />
+      )}
     </div>
   );
 }
