@@ -1,6 +1,26 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { fixture, horizontalOverflow } from "./helpers";
+test("Convert and Compress are purple feature cards in the Toolbox grid", async ({
+  page,
+}) => {
+  await page.goto("/#toolbox");
+  await expect(page.locator(".toolkit-cards .tool-card")).toHaveCount(8);
+
+  for (const testId of ["toolbox-convert-card", "toolbox-compress-card"]) {
+    const card = page.getByTestId(testId);
+    await expect(card).toBeVisible();
+    await expect(card).toHaveClass(/panel/);
+    await expect(card).toHaveClass(/tool-card/);
+  }
+
+  await page.getByTestId("toolbox-convert-card").click();
+  await expect(page.getByTestId("converter-dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByTestId("toolbox-compress-card").click();
+  await expect(page.getByTestId("converter-dialog")).toBeVisible();
+});
+
 async function upload(
   page: import("@playwright/test").Page,
   file = "transparent.png",

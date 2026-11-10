@@ -4,7 +4,6 @@ import { GifTool } from "./tools/GifTool";
 import { RedactTool } from "./tools/RedactTool";
 import { ResizeTool } from "./tools/ResizeTool";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeftRight, Minimize2 } from "lucide-react";
 import { tools, ToolboxCards } from "./ToolboxCards";
 import { defaults, type Options, type Result } from "../lib/toolkit/protocol";
 import {
@@ -231,25 +230,7 @@ export function ToolboxPage({
         ))}
       </nav>
       {!tool ? (
-        <>
-          <ToolboxCards />
-          <div className="toolkit-actions">
-            <button
-              className="button button--secondary"
-              onClick={() => onOpenTool("convert")}
-            >
-              <ArrowLeftRight size={18} />
-              Convert
-            </button>
-            <button
-              className="button button--secondary"
-              onClick={() => onOpenTool("compress")}
-            >
-              <Minimize2 size={18} />
-              Compress
-            </button>
-          </div>
-        </>
+        <ToolboxCards onOpenTool={onOpenTool} />
       ) : (
         <>
           <h2>{tools.find((item) => item.id === tool)?.name}</h2>
