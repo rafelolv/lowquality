@@ -16,6 +16,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type ChangeEvent,
   type DragEvent,
 } from "react";
@@ -35,6 +36,9 @@ import {
 import {
   compressionTargets,
   defaultCompressionTarget,
+  dimensionOptions,
+  formatTargetMb,
+  parseTargetMb,
   reductionPercent,
 } from "../lib/compression";
 import {
@@ -46,6 +50,8 @@ import {
 } from "../lib/workerClient";
 
 type ConvertFormat = Exclude<ExportFormat, "gif">;
+
+type RangeStyle = CSSProperties & { "--range-progress": string };
 
 interface ConverterDialogProps {
   initialMode?: ToolMode;
@@ -117,6 +123,9 @@ export function ConverterDialog({
   const [format, setFormat] = useState<ConvertFormat>("png");
   const [compressFormat, setCompressFormat] = useState<CompressFormat>("webp");
   const [targetBytes, setTargetBytes] = useState(0);
+  const [customTarget, setCustomTarget] = useState("");
+  const [maxDimension, setMaxDimension] = useState(0);
+  const [qualityFloor, setQualityFloor] = useState(0.6);
   const [busy, setBusy] = useState<
     "loading" | "converting" | "compressing" | null
   >(null);
@@ -129,6 +138,15 @@ export function ConverterDialog({
   const [dragActive, setDragActive] = useState(false);
 
   const targets = source ? compressionTargets(source.file.size) : [];
+  const dimensions = source ? dimensionOptions(source.width, source.height) : [];
+  const customTargetBytes = source
+    ? parseTargetMb(customTarget, source.file.size)
+    : null;
+  const customTargetInvalid = Boolean(
+    source && customTarget.trim() !== "" && customTargetBytes === null,
+  );
+  const floorPercent = Math.round(qualityFloor * 100);
+  const floorStyle: RangeStyle = { "--range-progress": `${floorPercent}%` };
 
   const disposeWorker = useCallback(() => {
     tokenRef.current += 1;
@@ -239,6 +257,8 @@ export function ConverterDialog({
           hasAlpha: image.hasAlpha,
         });
         setTargetBytes(defaultCompressionTarget(file.size));
+        setCustomTarget("");
+        setMaxDimension(0);
         setProgress(32);
         setStage("Warming up the converter");
 
@@ -333,7 +353,16 @@ export function ConverterDialog({
   }, [busy, format, ready, source]);
 
   const compress = useCallback(async () => {
-    if (!source || !ready || busy || !clientRef.current || !targetBytes) return;
+    if (
+      !source ||
+      !ready ||
+      busy ||
+      !clientRef.current ||
+      !targetBytes ||
+      customTargetInvalid
+    ) {
+      return;
+    }
     const client = clientRef.current;
     const token = tokenRef.current;
     setBusy("compressing");
@@ -345,7 +374,12 @@ export function ConverterDialog({
 
     try {
       const job = client.compressStatic(
-        { targetBytes, format: compressFormat },
+        {
+          targetBytes,
+          format: compressFormat,
+          maxDimension,
+          qualityFloor,
+        },
         (update: JobProgress) => {
           if (token !== tokenRef.current) return;
           setProgress(update.progress);
@@ -373,7 +407,16 @@ export function ConverterDialog({
     } finally {
       if (token === tokenRef.current) compressJobRef.current = null;
     }
-  }, [busy, compressFormat, ready, source, targetBytes]);
+  }, [
+    busy,
+    compressFormat,
+    customTargetInvalid,
+    maxDimension,
+    qualityFloor,
+    ready,
+    source,
+    targetBytes,
+  ]);
 
   const switchMode = useCallback(
     (next: ToolMode) => {
@@ -413,7 +456,11 @@ export function ConverterDialog({
     if (source && !busy) void loadSource(source.file);
   };
 
-  const actionDisabled = !source || busy !== null || (!ready && error === null);
+  const actionDisabled =
+    !source ||
+    busy !== null ||
+    (!ready && error === null) ||
+    (mode === 'compress' && (customTargetInvalid || !targetBytes));
   const actionIsRetry = Boolean(source && !ready && error);
 
   return (
@@ -645,6 +692,7 @@ export function ConverterDialog({
                       aria-pressed={active}
                       onClick={() => {
                         setTargetBytes(target.bytes);
+                        setCustomTarget("");
                         setCompressed(null);
                       }}
                       disabled={!ready || busy !== null}
@@ -660,11 +708,146 @@ export function ConverterDialog({
                   );
                 })}
               </div>
-              <p className="converter-hint">
-                Quality first: the encoder drops before the dimensions do, and
-                only by as much as the target needs.
-              </p>
+              <div className="converter-custom-target">
+                <label
+                  className="converter-custom-target__field"
+                  htmlFor="compressor-custom-target"
+                >
+                  <span className="field__label">Custom target</span>
+                  <span className="converter-custom-target__control">
+                    <input
+                      id="compressor-custom-target"
+                      type="number"
+                      inputMode="decimal"
+                      min="0.0001"
+                      step="0.01"
+                      placeholder={
+                        targetBytes > 0 ? formatTargetMb(targetBytes) : "0.75"
+                      }
+                      value={customTarget}
+                      onChange={(event) => {
+                        const value = event.currentTarget.value;
+                        setCustomTarget(value);
+                        setCompressed(null);
+                        if (!source) return;
+                        if (value.trim() === "") {
+                          setTargetBytes(
+                            defaultCompressionTarget(source.file.size),
+                          );
+                          return;
+                        }
+                        const bytes = parseTargetMb(value, source.file.size);
+                        if (bytes !== null) setTargetBytes(bytes);
+                      }}
+                      disabled={!ready || busy !== null}
+                      aria-invalid={customTargetInvalid}
+                      aria-describedby="compressor-custom-hint"
+                      data-testid="compressor-custom-target"
+                    />
+                    <span aria-hidden="true">MB</span>
+                  </span>
+                </label>
+                <p
+                  className={`converter-hint${
+                    customTargetInvalid ? " converter-hint--error" : ""
+                  }`}
+                  id="compressor-custom-hint"
+                  aria-live="polite"
+                  data-testid="compressor-custom-hint"
+                >
+                  {customTargetInvalid
+                    ? "Use a size below the original. Tiny files accept decimals too."
+                    : customTargetBytes && source
+                      ? `${formatFileSize(customTargetBytes)} target · ${reductionPercent(
+                          source.file.size,
+                          customTargetBytes,
+                        )}% smaller`
+                      : "Optional. Overrides the presets when filled."}
+                </p>
+              </div>
             </fieldset>
+
+            <details className="converter-advanced">
+              <summary>
+                <span>Fine-tuning</span>
+                <span className="converter-advanced__note">
+                  Resolution cap and quality floor
+                </span>
+              </summary>
+              <div className="converter-advanced__body">
+                <fieldset className="converter-formats">
+                  <legend>Max resolution</legend>
+                  <div
+                    className="converter-formats__grid converter-formats__grid--dimensions"
+                    data-testid="compressor-dimensions"
+                  >
+                    {dimensions.map((option) => {
+                      const active = maxDimension === option.value;
+                      return (
+                        <button
+                          type="button"
+                          key={option.value}
+                          className={`converter-format${
+                            active ? " converter-format--active" : ""
+                          }`}
+                          aria-pressed={active}
+                          onClick={() => {
+                            setMaxDimension(option.value);
+                            setCompressed(null);
+                          }}
+                          disabled={!ready || busy !== null}
+                          data-testid={`compressor-dimension-${option.value}`}
+                        >
+                          <span className="converter-format__label">
+                            {option.label}
+                          </span>
+                          <span className="converter-format__note">
+                            {option.value === 0
+                              ? "No hard cap"
+                              : `${option.value}px max`}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="converter-hint">
+                    A hard ceiling for the longest side. The encoder still only
+                    shrinks when the target needs it.
+                  </p>
+                </fieldset>
+
+                <fieldset className="converter-formats">
+                  <legend>Minimum quality</legend>
+                  <div className="converter-floor">
+                    <span className="converter-floor__value">
+                      {floorPercent}%
+                    </span>
+                    <input
+                      className="pixel-range"
+                      type="range"
+                      min={30}
+                      max={90}
+                      step={5}
+                      value={floorPercent}
+                      style={floorStyle}
+                      onChange={(event) => {
+                        setQualityFloor(
+                          Number(event.currentTarget.value) / 100,
+                        );
+                        setCompressed(null);
+                      }}
+                      disabled={!ready || busy !== null}
+                      aria-label="Minimum encoder quality"
+                      data-testid="compressor-quality-floor"
+                    />
+                  </div>
+                  <p className="converter-hint">
+                    The search refuses to go below this. Raise it to protect
+                    fine detail; lower it when every kilobyte counts.
+                  </p>
+                </fieldset>
+              </div>
+            </details>
           </>
         )}
 
@@ -737,7 +920,9 @@ export function ConverterDialog({
               <span className="converter-result__detail">
                 {formatLabel(compressed.format)} · quality{" "}
                 {Math.round(compressed.quality * 100)}% ·{" "}
-                {formatDimensions(compressed.width, compressed.height)}
+                {formatDimensions(compressed.width, compressed.height)} ·{" "}
+                {compressed.attempts}{" "}
+                {compressed.attempts === 1 ? "try" : "tries"}
                 {compressed.hitTarget ? "" : " · best effort"}
               </span>
             </div>

@@ -2,8 +2,31 @@ import { formatFileSize } from './imageLoader';
 
 const KB = 1024;
 const MB = 1024 * KB;
+/** Tiny files still deserve a sensible lower bound. */
+const MIN_TARGET_BYTES = 64;
 
-const PRESET_TARGETS = [2 * MB, MB, 500 * KB, 250 * KB, 100 * KB];
+const PRESET_TARGETS = [
+  2 * MB,
+  MB,
+  500 * KB,
+  250 * KB,
+  100 * KB,
+  50 * KB,
+];
+
+const PERCENT_TARGETS = [0.75, 0.5, 0.25] as const;
+
+const DIMENSION_CAPS = [
+  { value: 3840, label: '4K' },
+  { value: 2560, label: '2K' },
+  { value: 1920, label: '1080p' },
+  { value: 1280, label: '720p' },
+] as const;
+
+export interface DimensionOption {
+  value: number;
+  label: string;
+}
 
 export interface CompressionTarget {
   bytes: number;
@@ -11,27 +34,36 @@ export interface CompressionTarget {
 }
 
 /**
- * Targets shown in the compressor. The 50% option guarantees a meaningful
- * reduction even for images smaller than the lowest preset.
+ * Targets shown in the compressor. Fixed sizes are useful for upload limits;
+ * percentage options guarantee real choices on sources of any size.
  */
 export function compressionTargets(sourceBytes: number): CompressionTarget[] {
-  const half = Math.max(1, Math.round(sourceBytes / 2));
-  const candidates = new Set<number>();
+  const candidates = new Map<number, string>();
 
   for (const preset of PRESET_TARGETS) {
-    if (preset < sourceBytes * 0.9) candidates.add(preset);
+    if (preset < sourceBytes * 0.9) {
+      candidates.set(preset, formatFileSize(preset));
+    }
   }
-  if (half < sourceBytes * 0.9) candidates.add(half);
+
+  for (const share of PERCENT_TARGETS) {
+    const bytes = Math.max(1, Math.round(sourceBytes * share));
+    if (bytes < sourceBytes * 0.9 && !candidates.has(bytes)) {
+      candidates.set(
+        bytes,
+        `${Math.round(share * 100)}% · ${formatFileSize(bytes)}`,
+      );
+    }
+  }
+
   if (candidates.size === 0) {
-    candidates.add(Math.max(1, Math.round(sourceBytes * 0.75)));
+    const bytes = Math.max(1, Math.round(sourceBytes * 0.5));
+    candidates.set(bytes, `50% · ${formatFileSize(bytes)}`);
   }
 
   return [...candidates]
-    .sort((left, right) => right - left)
-    .map((bytes) => ({
-      bytes,
-      label: bytes === half ? `50% · ${formatFileSize(bytes)}` : formatFileSize(bytes),
-    }));
+    .sort(([left], [right]) => right - left)
+    .map(([bytes, label]) => ({ bytes, label }));
 }
 
 /** Pick the target closest to a 45% reduction. */
@@ -55,4 +87,37 @@ export function reductionPercent(
 ): number {
   if (sourceBytes <= 0) return 0;
   return Math.max(0, Math.round((1 - outputBytes / sourceBytes) * 100));
+}
+
+/** Resolution caps that actually constrain this image. */
+export function dimensionOptions(
+  width: number,
+  height: number,
+): DimensionOption[] {
+  const sourceMax = Math.max(width, height);
+  return [
+    { value: 0, label: "Original" },
+    ...DIMENSION_CAPS.filter((cap) => cap.value < sourceMax * 0.98),
+  ];
+}
+
+/** Parse a custom target in MB, rejecting sizes that would grow the file. */
+export function parseTargetMb(
+  value: string,
+  sourceBytes: number,
+): number | null {
+  const megabytes = Number(value.replace(',', '.'));
+  if (!Number.isFinite(megabytes) || megabytes <= 0) return null;
+  const bytes = Math.round(megabytes * MB);
+  if (bytes < MIN_TARGET_BYTES || bytes >= sourceBytes) return null;
+  return bytes;
+}
+
+export function formatTargetMb(bytes: number): string {
+  const megabytes = bytes / MB;
+  const digits = megabytes < 0.001 ? 5 : megabytes < 0.1 ? 3 : 2;
+  return megabytes
+    .toFixed(digits)
+    .replace(/0+$/, '')
+    .replace(/\.$/, '');
 }

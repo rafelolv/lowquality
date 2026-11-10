@@ -588,7 +588,6 @@ interface CompressedCandidate {
 
 const COMPRESS_BASE_QUALITY = 0.82;
 const COMPRESS_MAX_QUALITY = 0.95;
-const COMPRESS_MIN_QUALITY = 0.45;
 const COMPRESS_MIN_MAX_DIMENSION = 240;
 
 async function encodeCompressionCandidate(
@@ -613,16 +612,25 @@ async function encodeCompressionCandidate(
 }
 
 /**
- * Quality-first compression: keep the dimensions and lower the encoder
- * quality while it fits, then step the dimensions down and repeat. The first
- * fitting scale gets a short binary search for the highest quality that still
- * meets the target.
+ * Quality-first compression: at each resolution, search for the highest
+ * encoder quality that fits. Dimensions only step down when even the quality
+ * floor is too heavy at the current size.
  */
 async function handleStaticCompress(
   request: CompressStaticRequest,
 ): Promise<void> {
   const source = requireStaticSource();
   const target = Math.max(64, Math.round(request.targetBytes));
+  const floor = Math.min(
+    COMPRESS_MAX_QUALITY,
+    Math.max(0.3, request.qualityFloor),
+  );
+  const baseQuality = Math.max(COMPRESS_BASE_QUALITY, floor);
+  const sourceMax = Math.max(source.width, source.height);
+  const startScale =
+    request.maxDimension > 0
+      ? Math.min(1, request.maxDimension / sourceMax)
+      : 1;
   let attempts = 0;
   let smallest: CompressedCandidate | null = null;
 
@@ -649,54 +657,64 @@ async function handleStaticCompress(
     return candidate;
   };
 
-  let scale = 1;
+  const searchHighestQuality = async (
+    scale: number,
+    lowQuality: number,
+    lowCandidate: CompressedCandidate,
+    highQuality: number,
+  ): Promise<CompressedCandidate> => {
+    if (highQuality - lowQuality < 0.01) return lowCandidate;
+    let low = lowQuality;
+    let high = highQuality;
+    let best = lowCandidate;
+    for (let step = 0; step < 5; step += 1) {
+      const quality = (low + high) / 2;
+      const next = await tryQuality(scale, quality);
+      if (next.blob.size <= target) {
+        best = next;
+        low = quality;
+      } else {
+        high = quality;
+      }
+    }
+    return best;
+  };
+
+  let scale = startScale;
   let hit: CompressedCandidate | null = null;
 
   for (let round = 0; round < 9; round += 1) {
-    const candidate = await tryQuality(scale, COMPRESS_BASE_QUALITY);
+    const candidate = await tryQuality(scale, baseQuality);
     if (candidate.blob.size <= target) {
-      let low = COMPRESS_BASE_QUALITY;
-      let high = COMPRESS_MAX_QUALITY;
-      let best = candidate;
-      for (let step = 0; step < 5; step += 1) {
-        const quality = (low + high) / 2;
-        const next = await tryQuality(scale, quality);
-        if (next.blob.size <= target) {
-          best = next;
-          low = quality;
-        } else {
-          high = quality;
-        }
-      }
-      hit = best;
+      hit = await searchHighestQuality(
+        scale,
+        baseQuality,
+        candidate,
+        COMPRESS_MAX_QUALITY,
+      );
       break;
     }
 
-    const maxDimension = Math.max(source.width, source.height) * scale;
-    if (maxDimension <= COMPRESS_MIN_MAX_DIMENSION) break;
-    const estimated = Math.sqrt(target / candidate.blob.size) * 1.03;
+    // The comfortable quality is too heavy. Use the floor before shrinking.
+    let floorCandidate = candidate;
+    if (baseQuality > floor) {
+      floorCandidate = await tryQuality(scale, floor);
+      if (floorCandidate.blob.size <= target) {
+        hit = await searchHighestQuality(
+          scale,
+          floor,
+          floorCandidate,
+          baseQuality,
+        );
+        break;
+      }
+    }
+
+    const currentMaxDimension = sourceMax * scale;
+    if (currentMaxDimension <= COMPRESS_MIN_MAX_DIMENSION) break;
+    const estimated = Math.sqrt(target / floorCandidate.blob.size) * 1.03;
     const factor = Math.max(0.7, Math.min(0.9, estimated));
     scale *= factor;
-  }
-
-  if (!hit) {
-    const lowCandidate = await tryQuality(scale, COMPRESS_MIN_QUALITY);
-    if (lowCandidate.blob.size <= target) {
-      let low = COMPRESS_MIN_QUALITY;
-      let high = COMPRESS_BASE_QUALITY;
-      let best = lowCandidate;
-      for (let step = 0; step < 5; step += 1) {
-        const quality = (low + high) / 2;
-        const next = await tryQuality(scale, quality);
-        if (next.blob.size <= target) {
-          best = next;
-          low = quality;
-        } else {
-          high = quality;
-        }
-      }
-      hit = best;
-    }
   }
 
   const chosen = hit ?? smallest;

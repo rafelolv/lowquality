@@ -676,4 +676,20 @@
   .tools-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .converter-custom-target {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .converter-advanced > summary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-content: initial;
+  }
+
+  .converter-advanced__note {
+    grid-column: 1 / -1;
+    width: auto;
+    margin-left: 16px;
+  }
 }

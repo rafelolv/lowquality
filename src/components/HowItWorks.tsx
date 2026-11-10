@@ -32,7 +32,8 @@ export function HowItWorks() {
           </h2>
           <p>
             LowQuality is a tiny image-destruction studio that runs entirely inside your
-            browser. No login screen, no upload bar, no mysterious server.
+            browser. No login screen, no server round-trip, no mysterious
+            machinery.
           </p>
         </div>
 

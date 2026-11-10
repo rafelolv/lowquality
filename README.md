@@ -25,7 +25,7 @@ The interface is a deliberately unsubtle retro 8-bit console: dark purple checke
 - **Live preview** with original/result/compare modes, playback for GIFs, fit-to-window zoom, and a draggable text box.
 - **Exports:** PNG, JPG, WebP, and animated GIF. Copying a destroyed PNG to the clipboard is supported where the browser allows it.
 - **Mercy tools:** convert stills between PNG, JPG, and WebP without applying any degradation.
-- **Target-size compressor:** pick a file-size goal and the worker searches for the highest WebP or JPG quality that fits, reducing dimensions only when the target cannot be reached at full resolution.
+- **Target-size compressor:** pick a percentage, a fixed budget, or type a custom MB target. The worker searches for the highest WebP or JPG quality that fits, with optional resolution caps and a minimum-quality floor so dimensions only shrink when the target truly demands it.
 - **Safe limits and scaling options** before a GIF can exhaust memory.
 - **Responsive, keyboard-friendly, accessible UI** with reduced-motion support. Uploading compacts the header and focuses the editor. Preview and HOW BAD? stay together, presets use a compact grid, the desktop studio follows expanded controls, and mobile download/copy/progress/cancel actions stay in a bottom dock.
 - **No remote runtime requests** beyond loading the page, its locally bundled fonts, and the bundled sample artwork.

@@ -76,6 +76,8 @@ export interface ExportStaticPayload {
 export interface CompressStaticPayload {
   targetBytes: number;
   format: CompressFormat;
+  maxDimension: number;
+  qualityFloor: number;
 }
 
 export interface CompressStaticResult {

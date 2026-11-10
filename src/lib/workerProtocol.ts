@@ -62,6 +62,10 @@ export interface CompressStaticRequest {
   jobId: string;
   format: CompressFormat;
   targetBytes: number;
+  /** Longest output side in pixels. Zero keeps the source dimensions. */
+  maxDimension: number;
+  /** Lowest encoder quality the search may use, from 0.3 to 0.95. */
+  qualityFloor: number;
 }
 
 export interface ProcessGifPreviewRequest extends ProcessingBase {

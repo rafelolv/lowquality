@@ -37,7 +37,7 @@ export function ToolsSection({ onOpenTool }: ToolsSectionProps) {
             </span>
             <span className="tool-card__title">Convert</span>
             <span className="tool-card__body">
-              Move stills between PNG, JPG and WebP without a single lost pixel.
+              Move stills between PNG, JPG and WebP with no intentional damage.
               Alpha stays alpha.
             </span>
             <span className="tool-card__cta">Open converter →</span>
@@ -57,8 +57,9 @@ export function ToolsSection({ onOpenTool }: ToolsSectionProps) {
             </span>
             <span className="tool-card__title">Compress</span>
             <span className="tool-card__body">
-              Pick a target size. We find the highest quality that fits, then
-              trim dimensions only when the pixels demand it.
+              Pick a percentage, a fixed budget or a custom MB target. Cap the
+              resolution and set a quality floor; pixels only shrink when the
+              size demands it.
             </span>
             <span className="tool-card__cta">Open compressor →</span>
           </button>
