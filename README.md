@@ -24,11 +24,28 @@ The interface is a deliberately unsubtle retro 8-bit console: dark purple checke
 - **Reset edits** restores the original pixels and removes added text while keeping the loaded file. Clear removes the file entirely.
 - **Live preview** with original/result/compare modes, playback for GIFs, fit-to-window zoom, and a draggable text box.
 - **Exports:** PNG, JPG, WebP, and animated GIF. Copying a destroyed PNG to the clipboard is supported where the browser allows it.
+- **LowQuality Toolbox:** a separate, local-only workspace at `#toolbox` with six practical image tools: Resize & Crop, Batch, Metadata, Favicon, Redact, and GIF Kit. Each has its own hash route, and stills stay loaded while switching tools.
 - **Mercy tools:** convert stills between PNG, JPG, and WebP without applying any degradation.
 - **Target-size compressor:** pick a percentage, a fixed budget, or type a custom MB target. The worker searches for the highest WebP or JPG quality that fits, with optional resolution caps and a minimum-quality floor so dimensions only shrink when the target truly demands it.
 - **Safe limits and scaling options** before a GIF can exhaust memory.
 - **Responsive, keyboard-friendly, accessible UI** with reduced-motion support. Uploading compacts the header and focuses the editor. Preview and HOW BAD? stay together, presets use a compact grid, the desktop studio follows expanded controls, and mobile download/copy/progress/cancel actions stay in a bottom dock.
 - **No remote runtime requests** beyond loading the page, its locally bundled fonts, and the bundled sample artwork.
+
+## Toolbox
+
+The Toolbox is a separate workspace that shares the LowQuality shell, tokens, and local processing rules without changing the destruction editor. Every tool is hash-routed for GitHub Pages:
+
+| Route               | Tool                                  |
+| ------------------- | ------------------------------------- |
+| `#toolbox`          | Tool landing and tool cards           |
+| `#toolbox/resize`   | Resize, crop, rotate, flip, and encode |
+| `#toolbox/batch`    | Multi-file queue with ZIP download    |
+| `#toolbox/metadata` | Read EXIF/GPS and reencode clean files |
+| `#toolbox/favicon`  | PNG icons, multi-size ICO, manifest    |
+| `#toolbox/redact`   | Pixelate or blur exported regions      |
+| `#toolbox/gif`      | GIF recode, reverse, speed, extract    |
+
+Stills stay loaded while switching between single-file tools. Heavy decoding, transformation, compression, and GIF work runs in `src/workers/toolkit.worker.ts`; files never leave the tab.
 
 ## Quick start
 
@@ -65,7 +82,7 @@ npm run test:e2e:production # build and test the actual static production bundle
 
 Finite GIF loops stop on the final frame in the processed preview and can be replayed. Infinite loops remain continuous. Original GIF playback is handled by the browser.
 
-The Playwright suite covers JPEG/WebP input decoding, PNG alpha through degradation and export, every preset and individual effect, independent text duplication, immediate text exports, finite GIF loops, the empty state and bundled demo, sample loading, quality 0/50/100 behavior, presets and persistent overrides, text baked into pixels, compare/zoom controls, PNG/JPG/WebP downloads, clipboard copy, animated GIF playback, GIF export timing and looping, oversized-GIF scaling, unsupported files, and mobile overflow.
+The Playwright suite covers JPEG/WebP input decoding, PNG alpha through degradation and export, every preset and individual effect, independent text duplication, immediate text exports, finite GIF loops, the empty state and bundled demo, sample loading, quality 0/50/100 behavior, presets and persistent overrides, text baked into pixels, compare/zoom controls, PNG/JPG/WebP downloads, clipboard copy, animated GIF playback, GIF export timing and looping, oversized-GIF scaling, unsupported files, mobile overflow, and every Toolbox flow from upload through download (including ZIP, redaction pixels, EXIF/GPS removal, and GIF frame timing).
 
 ## Supported formats and limits
 
@@ -134,8 +151,11 @@ src/
     presets.ts            quality curves, presets, override resolution
     text.ts               text layout and rasterization
     workerClient.ts       typed worker client with cancellation and progress
+    toolkit/              pure geometry, ZIP, metadata, icon, and compression helpers
+  toolkit/                Toolbox page, tools, batch queue, crop/redact editor
   workers/
     destroy.worker.ts     decoding, degradation, and export worker
+    toolkit.worker.ts     Toolbox resize, crop, encode, metadata, icon, and GIF jobs
   styles/                 tokens, layout, editor, preview, responsive CSS
 public/
   samples/                original bundled before/after artwork

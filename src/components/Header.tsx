@@ -5,12 +5,12 @@ import { GITHUB_URL } from '../lib/site';
 
 const navigation = [
   { href: '#editor', label: 'Editor', active: true },
-  { href: '#tools', label: 'Tools' },
+  { href: '#toolbox', label: 'Toolbox' },
   { href: '#how-it-works', label: 'How It Works' },
   { href: '#about', label: 'About' },
 ];
 
-export function Header() {
+export function Header({ toolbox = false }: { toolbox?: boolean }) {
   return (
     <header className="site-header">
       <HeaderArt />
@@ -42,8 +42,8 @@ export function Header() {
             <a
               key={item.href}
               href={item.href}
-              className={`pixel-nav-link${item.active ? ' pixel-nav-link--active' : ''}`}
-              aria-current={item.active ? 'page' : undefined}
+              className={`pixel-nav-link${(toolbox ? item.href === '#toolbox' : item.active) ? ' pixel-nav-link--active' : ''}`}
+              aria-current={(toolbox ? item.href === '#toolbox' : item.active) ? 'page' : undefined}
             >
               {item.label}
             </a>

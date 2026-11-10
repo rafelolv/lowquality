@@ -73,6 +73,7 @@ export function Footer({ onOpenConverter, onOpenCompressor }: FooterProps) {
           >
             Compress
           </button>
+          <a href="#toolbox">Toolbox</a>
           <a href="#how-it-works">How It Works</a>
           <a href="#about">About</a>
         </nav>

@@ -218,6 +218,7 @@ export function prepareGifFrame(
   source: Uint8ClampedArray,
   width: number,
   height: number,
+  maxColors = 256,
 ): PreparedGifFrame {
   const rgba = new Uint8ClampedArray(source);
   const transparent = hasTransparency(rgba, 255);
@@ -235,7 +236,7 @@ export function prepareGifFrame(
     }
   }
 
-  let palette = quantize(rgba, transparent ? 255 : 256, {
+  let palette = quantize(rgba, Math.max(2, Math.min(transparent ? 255 : 256, maxColors)), {
     format: transparent ? "rgba4444" : "rgb565",
     oneBitAlpha: transparent,
     clearAlpha: transparent,

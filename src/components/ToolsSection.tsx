@@ -20,11 +20,12 @@ export function ToolsSection({ onOpenTool }: ToolsSectionProps) {
             <span className="text-yellow">needs to suffer.</span>
           </h2>
           <p>
-            Two clean tools for the files you actually want to keep. Same
+            Clean tools for the files you actually want to keep. Same
             local-only deal: nothing leaves this tab.
           </p>
         </div>
 
+        <a className="button" href="#toolbox">Open Toolbox</a>
         <div className="tools-grid">
           <button
             type="button"

@@ -1,0 +1,263 @@
+.toolkit {
+  padding-block: 40px 70px;
+}
+.toolkit-heading {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 30px;
+}
+.toolkit h1 {
+  font-size: clamp(40px, 7vw, 80px);
+}
+.toolkit h2 {
+  font-size: clamp(30px, 5vw, 48px);
+  margin-block: 28px;
+}
+.toolkit h3 {
+  font-size: 28px;
+}
+.toolkit-nav,
+.toolkit-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.toolkit-nav {
+  margin-block: 24px;
+}
+.toolkit-cards {
+  margin-block: 24px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.toolkit-cards a {
+  text-decoration: none;
+}
+.toolkit-stack {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.toolkit-box,
+.toolkit-result {
+  padding: clamp(16px, 3vw, 26px);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.toolkit-drop {
+  border: 3px dashed var(--lavender);
+}
+.toolkit-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.toolkit-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.toolkit input,
+.toolkit select {
+  max-width: 100%;
+  min-width: 0;
+}
+.toolkit input[type="number"],
+.toolkit select {
+  width: 100%;
+  padding: 10px;
+  background: var(--panel-deep);
+  border: 2px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  min-height: 44px;
+}
+.toolkit .button,
+.toolkit input[type="file"] {
+  min-height: 44px;
+}
+.toolkit input[type="file"] {
+  width: 100%;
+  padding-block: 10px;
+}
+.toolkit input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 10px;
+  color: var(--line);
+  background: var(--lavender);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  line-height: 1.5;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.toolkit input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  vertical-align: middle;
+  margin: 10px;
+}
+.toolkit label:has(input[type="checkbox"]) {
+  min-height: 44px;
+}
+.toolkit-image {
+  position: relative;
+  width: 100%;
+  touch-action: none;
+  user-select: none;
+  background: repeating-conic-gradient(var(--panel) 0% 25%, var(--bg-0) 0% 50%)
+    0/20px 20px;
+  border: 2px solid var(--lavender);
+}
+.toolkit-image > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.toolkit-crop,
+.toolkit-region {
+  position: absolute;
+  border: 2px solid var(--yellow);
+}
+.toolkit-crop {
+  cursor: move;
+}
+.toolkit-thirds {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to right,
+      transparent 32.9%,
+      var(--yellow) 33%,
+      transparent 33.5%,
+      transparent 66%,
+      var(--yellow) 66.5%,
+      transparent 67%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 32.9%,
+      var(--yellow) 33%,
+      transparent 33.5%,
+      transparent 66%,
+      var(--yellow) 66.5%,
+      transparent 67%
+    );
+}
+.toolkit-handle {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  z-index: 2;
+}
+.toolkit-handle::after {
+  content: "";
+  position: absolute;
+  inset: 13px;
+  background: var(--yellow);
+  border: 2px solid var(--line);
+}
+.toolkit-handle--nw {
+  left: -22px;
+  top: -22px;
+  cursor: nwse-resize;
+}
+.toolkit-handle--ne {
+  right: -22px;
+  top: -22px;
+  cursor: nesw-resize;
+}
+.toolkit-handle--sw {
+  left: -22px;
+  bottom: -22px;
+  cursor: nesw-resize;
+}
+.toolkit-handle--se {
+  right: -22px;
+  bottom: -22px;
+  cursor: nwse-resize;
+}
+.toolkit-region {
+  pointer-events: none;
+  background: color-mix(in srgb, var(--violet) 45%, transparent);
+}
+.toolkit-result {
+  display: grid;
+  gap: 12px;
+  border-color: var(--green);
+  overflow-wrap: anywhere;
+}
+.toolkit-output {
+  max-width: 100%;
+  max-height: 350px;
+  height: auto;
+  object-fit: contain;
+  justify-self: start;
+}
+.toolkit-error {
+  color: var(--red);
+}
+.toolkit progress {
+  max-width: 100%;
+  accent-color: var(--green);
+}
+.toolkit dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 8px;
+  overflow-wrap: anywhere;
+}
+.toolkit dl > div {
+  display: contents;
+}
+.toolkit-frames {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.toolkit-frames img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+.toolkit-icon-previews {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 20px;
+}
+.toolkit-icon-previews img {
+  display: block;
+  max-width: 100%;
+}
+@media (max-width: 700px) {
+  .toolkit-workspace,
+  .toolkit-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .toolkit-nav {
+    gap: 8px;
+  }
+  .toolkit-nav .button {
+    font-size: 7px;
+    padding: 10px 8px;
+  }
+  .toolkit-image {
+    max-width: calc(100% - 24px);
+    margin-inline: 12px;
+  }
+}
+
+.toolkit input[type="color"],
+.toolkit .pixel-range {
+  min-height: 44px;
+}
+
+/* The route focuses this container for screen readers; the outline belongs
+   on the controls, not around the whole workspace. */
+.toolkit:focus {
+  outline: none;
+}

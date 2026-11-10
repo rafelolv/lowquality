@@ -1,3 +1,4 @@
+import { ToolboxPage } from "./toolkit/ToolboxPage";
 import {
   useCallback,
   useEffect,
@@ -123,6 +124,13 @@ function errorMessage(error: unknown): string {
 }
 
 export default function App() {
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const update = () => setHash(window.location.hash);
+    window.addEventListener("hashchange", update);
+    return () => window.removeEventListener("hashchange", update);
+  }, []);
+  const isToolbox = hash === "#toolbox" || hash.startsWith("#toolbox/");
   const support = useMemo(() => checkBrowserSupport(), []);
   const fontsReady = useFontsReady();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -714,6 +722,7 @@ export default function App() {
 
   useEffect(() => {
     const onPaste = (event: ClipboardEvent) => {
+      if (isToolbox) return;
       const target = event.target;
       if (
         target instanceof HTMLElement &&
@@ -736,7 +745,7 @@ export default function App() {
     };
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
-  }, []);
+  }, [isToolbox]);
 
   const openFilePicker = useCallback(() => {
     if (!fileInputRef.current) return;
@@ -1081,12 +1090,24 @@ export default function App() {
 
   return (
     <div className={`app${session ? " app--editing" : " app--empty"}`}>
-      <a className="skip-link" href="#editor">
-        Skip to the editor
+      <a
+        className="skip-link"
+        href={isToolbox ? "#toolbox" : "#editor"}
+        onClick={(event) => {
+          // A skip link should move focus, not navigate between hash routes.
+          event.preventDefault();
+          const target = document.getElementById(
+            isToolbox ? "toolbox" : "editor",
+          );
+          target?.focus();
+          target?.scrollIntoView();
+        }}
+      >
+        {isToolbox ? "Skip to the toolbox" : "Skip to the editor"}
       </a>
-      <Header />
+      <Header toolbox={isToolbox} />
 
-      <div className="ticker" aria-hidden="true">
+      <div className="ticker" aria-hidden="true" hidden={isToolbox}>
         <div className="ticker__track">
           {Array.from({ length: 4 }, (_, index) => (
             <span key={index}>
@@ -1097,7 +1118,8 @@ export default function App() {
         </div>
       </div>
 
-      <main>
+      {isToolbox && <ToolboxPage hash={hash} onOpenTool={openTool} />}
+      <main hidden={isToolbox}>
         <div className="container">
           <section className="hero" aria-labelledby="hero-heading">
             <div className="hero__copy">

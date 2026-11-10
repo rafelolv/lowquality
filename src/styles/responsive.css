@@ -195,6 +195,7 @@
   .pixel-nav-link {
     flex: 1;
     justify-content: center;
+    min-height: 44px;
     padding-inline: 5px;
     font-size: 6px;
   }

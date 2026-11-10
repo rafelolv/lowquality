@@ -1,4 +1,8 @@
 /// <reference lib="webworker" />
+import {
+  searchCompression,
+  type CompressedCandidate,
+} from "../lib/toolkit/compressSearch";
 
 import { parseGIF } from "gifuct-js";
 import type { ParsedGif } from "gifuct-js";
@@ -579,17 +583,6 @@ async function handleStaticExport(request: ExportStaticRequest): Promise<void> {
   post({ type: "export-blob", jobId: request.jobId, blob, mime: blob.type });
 }
 
-interface CompressedCandidate {
-  blob: Blob;
-  width: number;
-  height: number;
-  quality: number;
-}
-
-const COMPRESS_BASE_QUALITY = 0.82;
-const COMPRESS_MAX_QUALITY = 0.95;
-const COMPRESS_MIN_MAX_DIMENSION = 240;
-
 async function encodeCompressionCandidate(
   source: StaticSource,
   scale: number,
@@ -611,126 +604,17 @@ async function encodeCompressionCandidate(
   return { blob, width, height, quality };
 }
 
-/**
- * Quality-first compression: at each resolution, search for the highest
- * encoder quality that fits. Dimensions only step down when even the quality
- * floor is too heavy at the current size.
- */
-async function handleStaticCompress(
-  request: CompressStaticRequest,
-): Promise<void> {
+async function handleStaticCompress(request: CompressStaticRequest): Promise<void> {
   const source = requireStaticSource();
-  const target = Math.max(64, Math.round(request.targetBytes));
-  const floor = Math.min(
-    COMPRESS_MAX_QUALITY,
-    Math.max(0.3, request.qualityFloor),
+  const chosen = await searchCompression(
+    source.width,
+    source.height,
+    request,
+    (scale, quality) => encodeCompressionCandidate(source, scale, quality, request.format, request.jobId),
+    (progress) => postProgress(request.jobId, progress, "Testing quality"),
   );
-  const baseQuality = Math.max(COMPRESS_BASE_QUALITY, floor);
-  const sourceMax = Math.max(source.width, source.height);
-  const startScale =
-    request.maxDimension > 0
-      ? Math.min(1, request.maxDimension / sourceMax)
-      : 1;
-  let attempts = 0;
-  let smallest: CompressedCandidate | null = null;
-
-  const tryQuality = async (
-    scale: number,
-    quality: number,
-  ): Promise<CompressedCandidate> => {
-    attempts += 1;
-    postProgress(
-      request.jobId,
-      Math.min(92, 6 + attempts * 8),
-      `Testing ${Math.round(quality * 100)}% quality`,
-    );
-    const candidate = await encodeCompressionCandidate(
-      source,
-      scale,
-      quality,
-      request.format,
-      request.jobId,
-    );
-    if (!smallest || candidate.blob.size < smallest.blob.size) {
-      smallest = candidate;
-    }
-    return candidate;
-  };
-
-  const searchHighestQuality = async (
-    scale: number,
-    lowQuality: number,
-    lowCandidate: CompressedCandidate,
-    highQuality: number,
-  ): Promise<CompressedCandidate> => {
-    if (highQuality - lowQuality < 0.01) return lowCandidate;
-    let low = lowQuality;
-    let high = highQuality;
-    let best = lowCandidate;
-    for (let step = 0; step < 5; step += 1) {
-      const quality = (low + high) / 2;
-      const next = await tryQuality(scale, quality);
-      if (next.blob.size <= target) {
-        best = next;
-        low = quality;
-      } else {
-        high = quality;
-      }
-    }
-    return best;
-  };
-
-  let scale = startScale;
-  let hit: CompressedCandidate | null = null;
-
-  for (let round = 0; round < 9; round += 1) {
-    const candidate = await tryQuality(scale, baseQuality);
-    if (candidate.blob.size <= target) {
-      hit = await searchHighestQuality(
-        scale,
-        baseQuality,
-        candidate,
-        COMPRESS_MAX_QUALITY,
-      );
-      break;
-    }
-
-    // The comfortable quality is too heavy. Use the floor before shrinking.
-    let floorCandidate = candidate;
-    if (baseQuality > floor) {
-      floorCandidate = await tryQuality(scale, floor);
-      if (floorCandidate.blob.size <= target) {
-        hit = await searchHighestQuality(
-          scale,
-          floor,
-          floorCandidate,
-          baseQuality,
-        );
-        break;
-      }
-    }
-
-    const currentMaxDimension = sourceMax * scale;
-    if (currentMaxDimension <= COMPRESS_MIN_MAX_DIMENSION) break;
-    const estimated = Math.sqrt(target / floorCandidate.blob.size) * 1.03;
-    const factor = Math.max(0.7, Math.min(0.9, estimated));
-    scale *= factor;
-  }
-
-  const chosen = hit ?? smallest;
-  if (!chosen) throw new Error("The image could not be compressed.");
   postProgress(request.jobId, 96, "Writing file");
-  post({
-    type: "compressed-blob",
-    jobId: request.jobId,
-    blob: chosen.blob,
-    mime: chosen.blob.type,
-    width: chosen.width,
-    height: chosen.height,
-    quality: chosen.quality,
-    attempts,
-    hitTarget: hit !== null,
-  });
+  post({ type: "compressed-blob", jobId: request.jobId, ...chosen, mime: chosen.blob.type });
 }
 
 async function handleGifPreview(
