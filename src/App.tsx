@@ -124,6 +124,7 @@ function errorMessage(error: unknown): string {
 
 export default function App() {
   const [hash, setHash] = useState(window.location.hash);
+  const [toolboxFile, setToolboxFile] = useState<File | null>(null);
   useEffect(() => {
     const update = () => setHash(window.location.hash);
     window.addEventListener("hashchange", update);
@@ -1102,7 +1103,7 @@ export default function App() {
           target?.scrollIntoView();
         }}
       >
-        {isToolbox ? "Skip to the toolbox" : "Skip to the editor"}
+        {isToolbox ? "Skip to the toolbox" : "Skip to Destroy"}
       </a>
       <Header toolbox={isToolbox} />
 
@@ -1117,7 +1118,13 @@ export default function App() {
         </div>
       </div>
 
-      {isToolbox && <ToolboxPage hash={hash} />}
+      {isToolbox && (
+        <ToolboxPage
+          hash={hash}
+          file={toolboxFile}
+          onFileChange={setToolboxFile}
+        />
+      )}
       <main hidden={isToolbox}>
         <div className="container">
           <section className="hero" aria-labelledby="hero-heading">

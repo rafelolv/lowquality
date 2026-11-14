@@ -56,7 +56,7 @@ export function Footer({ onOpenConverter, onOpenCompressor }: FooterProps) {
         </div>
 
         <nav className="site-footer__nav" aria-label="Footer navigation">
-          <a href="#editor">Editor</a>
+          <a href="#editor">Destroy</a>
           <button
             type="button"
             onClick={onOpenConverter}

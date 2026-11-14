@@ -22,10 +22,18 @@ import { OutputControls } from "./controls";
 import { RegionEditor } from "./RegionEditor";
 import { ResultCard } from "./ResultCard";
 import "./toolkit.css";
-export function ToolboxPage({ hash }: { hash: string }) {
+export function ToolboxPage({
+  hash,
+  file,
+  onFileChange,
+}: {
+  hash: string;
+  file: File | null;
+  onFileChange: (file: File | null) => void;
+}) {
   const activeTool = tools.find((item) => `#toolbox/${item.id}` === hash);
   const tool = activeTool?.id;
-  const [file, setFile] = useState<File | null>(null);
+  const inspectedFile = useRef<File | null>(null);
   const [source, setSource] = useState<Result | null>(null);
   const [options, setOptions] = useState<Options>(defaults);
   const [result, setResult] = useState<Result | null>(null);
@@ -92,11 +100,17 @@ export function ToolboxPage({ hash }: { hash: string }) {
       file &&
       tool &&
       !["convert", "compress", "batch", "video"].includes(tool) &&
-      (!source || Boolean(source.frames) !== (tool === "gif"))
+      (!source ||
+        inspectedFile.current !== file ||
+        Boolean(source.frames) !== (tool === "gif"))
     ) {
       void load(file);
     }
-  }, [tool]);
+    if (!file) {
+      inspectedFile.current = null;
+      setSource(null);
+    }
+  }, [tool, file]);
   useEffect(
     () => () => {
       version.current++;
@@ -119,7 +133,7 @@ export function ToolboxPage({ hash }: { hash: string }) {
     setBusy(true);
     setError("");
     setResult(null);
-    setFile(next);
+    inspectedFile.current = null;
     setSource(null);
     setProgress(0);
     const job = startJob(
@@ -142,6 +156,7 @@ export function ToolboxPage({ hash }: { hash: string }) {
     try {
       const value = await job.promise;
       if (token !== version.current) return;
+      inspectedFile.current = next;
       setSource(value);
       setOptions({ ...defaults, width: value.width, height: value.height });
       setPreset("Custom");
@@ -292,6 +307,21 @@ export function ToolboxPage({ hash }: { hash: string }) {
               happens right here in your browser.
             </p>
           </div>
+          {file && (
+            <div className="panel toolkit-box toolkit-source-summary">
+              <p>
+                <span className="field__label">Current image</span> {file.name}{" "}
+                · {formatFileSize(file.size)}
+              </p>
+              <button
+                type="button"
+                className="button button--ghost button--small"
+                onClick={() => onFileChange(null)}
+              >
+                Remove image
+              </button>
+            </div>
+          )}
           <ToolboxCards />
         </>
       ) : (
@@ -315,7 +345,7 @@ export function ToolboxPage({ hash }: { hash: string }) {
             </div>
           </header>
           {tool === "convert" || tool === "compress" ? (
-            <ImageTools mode={tool} />
+            <ImageTools mode={tool} file={file} onFileChange={onFileChange} />
           ) : tool === "batch" ? (
             <Batch />
           ) : tool === "video" ? (
@@ -328,7 +358,7 @@ export function ToolboxPage({ hash }: { hash: string }) {
                 onDrop={(e) => {
                   e.preventDefault();
                   const next = e.dataTransfer.files[0];
-                  if (next) void load(next);
+                  if (next) onFileChange(next);
                 }}
               >
                 <label className="field">
@@ -353,18 +383,28 @@ export function ToolboxPage({ hash }: { hash: string }) {
                     }
                     onChange={(e) => {
                       const next = e.target.files?.[0];
-                      if (next) void load(next);
+                      if (next) onFileChange(next);
                       e.target.value = "";
                     }}
                   />
                 </label>
               </div>
               {file && (
-                <p>
-                  <span className="field__label">Source</span> {file.name}
-                  {source &&
-                    ` · ${source.width} × ${source.height} px · ${formatFileSize(file.size)}`}
-                </p>
+                <div className="toolkit-source-summary">
+                  <p>
+                    <span className="field__label">Source</span> {file.name}
+                    {source &&
+                      inspectedFile.current === file &&
+                      ` · ${source.width} × ${source.height} px · ${formatFileSize(file.size)}`}
+                  </p>
+                  <button
+                    type="button"
+                    className="button button--ghost button--small"
+                    onClick={() => onFileChange(null)}
+                  >
+                    Remove image
+                  </button>
+                </div>
               )}
               {!file && (
                 <div className="toolkit-start">
@@ -376,7 +416,7 @@ export function ToolboxPage({ hash }: { hash: string }) {
                   </p>
                 </div>
               )}
-              {source && (
+              {source && inspectedFile.current === file && (
                 <div className="toolkit-workspace">
                   <div className="toolkit-stack">
                     {url && (

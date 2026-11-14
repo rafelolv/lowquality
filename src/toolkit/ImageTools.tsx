@@ -50,6 +50,8 @@ type RangeStyle = CSSProperties & { "--range-progress": string };
 
 interface ImageToolsProps {
   mode: ToolMode;
+  file: File | null;
+  onFileChange: (file: File | null) => void;
 }
 
 interface SourceState {
@@ -100,7 +102,7 @@ function formatLabel(format: ConvertFormat): string {
   return FORMATS.find((item) => item.id === format)?.label ?? format;
 }
 
-export function ImageTools({ mode }: ImageToolsProps) {
+export function ImageTools({ mode, file, onFileChange }: ImageToolsProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const clientRef = useRef<DestroyWorkerClient | null>(null);
   const initJobRef = useRef<JobHandle<void> | null>(null);
@@ -213,7 +215,7 @@ export function ImageTools({ mode }: ImageToolsProps) {
         const info = validateStaticFile(file);
         if (info.animated) {
           throw new Error(
-            "Animated GIFs need the main editor, where every frame survives. These tools are stills only.",
+            "Use GIF Kit to keep animated GIF frames. Convert and Compress accept still images.",
           );
         }
 
@@ -342,7 +344,6 @@ export function ImageTools({ mode }: ImageToolsProps) {
         return;
 
       const name = buildConvertedName(source.file.name, format);
-      downloadBlob(blob, name);
       setResult({ blob, name, format });
       setBusy(null);
       setProgress(100);
@@ -421,7 +422,6 @@ export function ImageTools({ mode }: ImageToolsProps) {
         return;
 
       const name = buildCompressedName(source.file.name, compressFormat);
-      downloadBlob(output.blob, name);
       setCompressed({ ...output, name, format: compressFormat });
       setBusy(null);
       setProgress(100);
@@ -458,6 +458,20 @@ export function ImageTools({ mode }: ImageToolsProps) {
     targetBytes,
   ]);
 
+  useEffect(() => {
+    if (file) {
+      void loadSource(file);
+    } else {
+      disposeWorker();
+      setSource(null);
+      setResult(null);
+      setCompressed(null);
+      setReady(false);
+      setBusy(null);
+      setError(null);
+    }
+  }, [file, loadSource, disposeWorker]);
+
   const openFilePicker = useCallback(() => {
     if (busy) return;
     if (!inputRef.current) return;
@@ -468,7 +482,7 @@ export function ImageTools({ mode }: ImageToolsProps) {
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
     event.currentTarget.value = "";
-    if (file && !busy) void loadSource(file);
+    if (file && !busy) onFileChange(file);
   };
 
   const handleDrop = (event: DragEvent<HTMLElement>) => {
@@ -476,7 +490,7 @@ export function ImageTools({ mode }: ImageToolsProps) {
     event.stopPropagation();
     setDragActive(false);
     const file = event.dataTransfer.files[0];
-    if (file && !busy) void loadSource(file);
+    if (file && !busy) onFileChange(file);
   };
 
   const retry = () => {
@@ -531,6 +545,14 @@ export function ImageTools({ mode }: ImageToolsProps) {
             >
               <RefreshCw size={14} aria-hidden="true" />
               Replace
+            </button>
+            <button
+              type="button"
+              className="button button--ghost button--small"
+              onClick={() => onFileChange(null)}
+              disabled={busy !== null}
+            >
+              Remove image
             </button>
           </div>
         ) : (
@@ -615,8 +637,10 @@ export function ImageTools({ mode }: ImageToolsProps) {
           </div>
           {source && (
             <p className="toolkit-preview__caption">
-              {formatDimensions(source.width, source.height)} · Original{" "}
-              {formatFileSize(source.file.size)}
+              {compressed && resultUrl && !showOriginal
+                ? formatDimensions(compressed.width, compressed.height)
+                : formatDimensions(source.width, source.height)}{" "}
+              · Original {formatFileSize(source.file.size)}
               {outputBlob ? ` · Result ${formatFileSize(outputBlob.size)}` : ""}
             </p>
           )}
@@ -633,7 +657,7 @@ export function ImageTools({ mode }: ImageToolsProps) {
           <p>
             {mode === "convert"
               ? "PNG keeps every pixel. JPG and WebP trade some detail for smaller files."
-              : "Set your size budget. We search for the best quality that fits."}
+              : "Choose a target file size. We reduce encoding quality first, then dimensions if needed."}
           </p>
         </div>
         {mode === "convert" ? (
@@ -871,8 +895,9 @@ export function ImageTools({ mode }: ImageToolsProps) {
                     />
                   </div>
                   <p className="converter-hint">
-                    The search refuses to go below this. Raise it to protect
-                    fine detail; lower it when every kilobyte counts.
+                    Higher quality protects detail, but may require smaller
+                    dimensions to reach your target size. Lower quality can keep
+                    more pixels at the cost of detail.
                   </p>
                 </fieldset>
               </div>
@@ -916,7 +941,7 @@ export function ImageTools({ mode }: ImageToolsProps) {
               <strong title={result.name}>{result.name}</strong>
               <span>
                 {formatLabel(result.format)} ·{" "}
-                {formatFileSize(result.blob.size)} · saved
+                {formatFileSize(result.blob.size)} · ready
               </span>
             </div>
             <button
@@ -926,7 +951,7 @@ export function ImageTools({ mode }: ImageToolsProps) {
               disabled={busy !== null}
             >
               <Download size={14} aria-hidden="true" />
-              Download again
+              Download result
             </button>
           </div>
         )}
@@ -949,8 +974,9 @@ export function ImageTools({ mode }: ImageToolsProps) {
               <span>
                 {formatFileSize(source.file.size)} →{" "}
                 {formatFileSize(compressed.blob.size)} ·{" "}
-                {reductionPercent(source.file.size, compressed.blob.size)}%
-                smaller
+                {compressed.blob.size > source.file.size
+                  ? `${Math.round((compressed.blob.size / source.file.size - 1) * 100)}% larger`
+                  : `${reductionPercent(source.file.size, compressed.blob.size)}% smaller`}
               </span>
               <span className="converter-result__detail">
                 {formatLabel(compressed.format)} · quality{" "}
@@ -968,7 +994,7 @@ export function ImageTools({ mode }: ImageToolsProps) {
               disabled={busy !== null}
             >
               <Download size={14} aria-hidden="true" />
-              Download again
+              Download result
             </button>
           </div>
         )}
@@ -1006,7 +1032,7 @@ export function ImageTools({ mode }: ImageToolsProps) {
             {busy === "converting" || busy === "compressing" ? (
               <Loader2 className="spin" size={16} aria-hidden="true" />
             ) : (
-              <Download size={16} aria-hidden="true" />
+              <FileImage size={16} aria-hidden="true" />
             )}
             <span>
               {busy === "converting"
@@ -1016,8 +1042,8 @@ export function ImageTools({ mode }: ImageToolsProps) {
                   : actionIsRetry
                     ? "TRY AGAIN"
                     : mode === "convert"
-                      ? "CONVERT & DOWNLOAD"
-                      : "COMPRESS & DOWNLOAD"}
+                      ? "Convert image"
+                      : "Compress image"}
             </span>
           </button>
         </div>

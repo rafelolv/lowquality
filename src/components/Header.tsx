@@ -4,7 +4,7 @@ import { HeaderArt } from './HeaderArt';
 import { GITHUB_URL } from '../lib/site';
 
 const navigation = [
-  { href: '#editor', label: 'Editor', active: true },
+  { href: '#editor', label: 'Destroy', active: true },
   { href: '#toolbox', label: 'Toolbox' },
   { href: '#how-it-works', label: 'How It Works' },
   { href: '#about', label: 'About' },
@@ -27,7 +27,7 @@ export function Header({ toolbox = false }: { toolbox?: boolean }) {
           <span>GitHub</span>
         </a>
 
-        <a className="brand" href="#editor" aria-label="LowQuality — go to the editor">
+        <a className="brand" href="#editor" aria-label="LowQuality - open Destroy editor">
           <Mascot className="brand__mascot" />
           <span className="brand__copy">
             <span className="brand__name" aria-label="LowQuality">

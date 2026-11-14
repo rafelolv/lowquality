@@ -14,14 +14,15 @@ export const tools = [
     id: "convert",
     name: "Convert",
     icon: ArrowLeftRight,
-    description: "A new format. Same pixels, fresh start.",
+    description: "Change image format. Keep the original dimensions.",
     detail: "PNG · JPG · WebP",
   },
   {
     id: "compress",
     name: "Compress",
     icon: Minimize2,
-    description: "Less weight. Keep the detail that matters.",
+    description:
+      "Reduce file size to a target. Quality and dimensions may change.",
     detail: "Target size · Quality floor",
   },
   {

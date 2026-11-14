@@ -22,7 +22,6 @@ import { formatFileSize } from "../../lib/imageLoader";
 import { convertVideoToGif } from "../../lib/videoGifClient";
 import {
   buildVideoGifName,
-  defaultVideoGifWidth,
   detectVideoFormat,
   formatVideoTime,
   MAX_VIDEO_FILE_BYTES,
@@ -30,6 +29,9 @@ import {
   MAX_VIDEO_GIF_SECONDS,
   planVideoGif,
   VIDEO_ACCEPT,
+  VIDEO_GIF_PRESETS,
+  videoGifPreset,
+  type VideoGifPreset,
   type VideoGifPlan,
 } from "../../lib/videoGifPlan";
 
@@ -71,6 +73,7 @@ export function VideoToGifTool() {
   const [url, setUrl] = useState("");
   const [meta, setMeta] = useState<VideoMeta | null>(null);
   const [settings, setSettings] = useState<VideoSettings | null>(null);
+  const [preset, setPreset] = useState<VideoGifPreset | "custom">("balanced");
   const [result, setResult] = useState<VideoResult | null>(null);
   const [resultUrl, setResultUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -202,16 +205,14 @@ export function VideoToGifTool() {
       return;
     }
     const end = Math.min(duration, 10);
-    const fps = 12;
-    const outputWidth = defaultVideoGifWidth(width, height, 0, end, fps);
+    const defaults = videoGifPreset("balanced", width, height, 0, end);
+    setPreset("balanced");
     setMeta({ width, height, duration });
     setSettings({
       start: 0,
       end,
-      fps,
-      width: outputWidth,
+      ...defaults,
       speed: 1,
-      colors: 128,
       reverse: false,
       loop: true,
     });
@@ -231,9 +232,31 @@ export function VideoToGifTool() {
   }
 
   const change = (patch: Partial<VideoSettings>) => {
+    if (
+      patch.fps !== undefined ||
+      patch.width !== undefined ||
+      patch.colors !== undefined
+    )
+      setPreset("custom");
+    const adjusted =
+      preset !== "custom" &&
+      meta &&
+      settings &&
+      (patch.start !== undefined || patch.end !== undefined)
+        ? {
+            ...patch,
+            ...videoGifPreset(
+              preset,
+              meta.width,
+              meta.height,
+              patch.start ?? settings.start,
+              patch.end ?? settings.end,
+            ),
+          }
+        : patch;
     previewClipRef.current = false;
     videoRef.current?.pause();
-    setSettings((current) => (current ? { ...current, ...patch } : current));
+    setSettings((current) => (current ? { ...current, ...adjusted } : current));
     setResult(null);
   };
 
@@ -543,8 +566,9 @@ export function VideoToGifTool() {
                 behind.
               </p>
               <p className="video-hint">
-                The first frame rate and width are chosen to fit the safe GIF
-                budget. Reduce either if you trim a longer clip.
+                Start with a preset, then adjust the clip and output settings.
+                Higher FPS makes motion smoother; larger dimensions keep more
+                detail. Both usually increase file size.
               </p>
             </div>
           </div>
@@ -556,6 +580,40 @@ export function VideoToGifTool() {
             <legend>GIF settings</legend>
             {meta && settings ? (
               <>
+                <label className="field">
+                  <span className="field__label">GIF preset</span>
+                  <select
+                    aria-label="GIF preset"
+                    value={preset}
+                    onChange={(event) => {
+                      const next = event.currentTarget.value as
+                        | VideoGifPreset
+                        | "custom";
+                      if (next !== "custom")
+                        change(
+                          videoGifPreset(
+                            next,
+                            meta.width,
+                            meta.height,
+                            settings.start,
+                            settings.end,
+                          ),
+                        );
+                      setPreset(next);
+                    }}
+                  >
+                    {VIDEO_GIF_PRESETS.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                    <option value="custom">Custom</option>
+                  </select>
+                </label>
+                <p className="video-hint">
+                  Smaller file uses fewer frames and colors. Smoother motion
+                  keeps more frames. Presets adapt to your clip length.
+                </p>
                 <div className="video-trim">
                   <div className="video-range">
                     <div className="video-range__row">
@@ -627,11 +685,13 @@ export function VideoToGifTool() {
                         change({ fps: Number(event.currentTarget.value) })
                       }
                     >
-                      {FPS_OPTIONS.map((fps) => (
-                        <option key={fps} value={fps}>
-                          {fps} FPS
-                        </option>
-                      ))}
+                      {Array.from(new Set([...FPS_OPTIONS, settings.fps]))
+                        .sort((a, b) => a - b)
+                        .map((fps) => (
+                          <option key={fps} value={fps}>
+                            {fps} FPS
+                          </option>
+                        ))}
                     </select>
                   </label>
                   <label className="field">

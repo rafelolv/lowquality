@@ -6,6 +6,8 @@ import {
   formatVideoTime,
   MAX_VIDEO_GIF_SECONDS,
   planVideoGif,
+  videoGifPreset,
+  VIDEO_GIF_PRESETS,
 } from "../../src/lib/videoGifPlan";
 
 function videoFile(name: string, type = ""): File {
@@ -162,4 +164,33 @@ it("accepts tenth-second trims despite floating point subtraction, rejects negat
   };
   expect(planVideoGif(input).frameCount).toBe(1);
   expect(() => planVideoGif({ ...input, start: -1, end: 1 })).toThrow(/zero/);
+});
+
+it("keeps all presets within frame and pixel budgets for long and portrait clips", () => {
+  for (const preset of VIDEO_GIF_PRESETS) {
+    for (const end of [1.5, 10, 30, 60]) {
+      const settings = videoGifPreset(preset.id, 1080, 1920, 0, end);
+      const plan = planVideoGif({
+        ...settings,
+        start: 0,
+        end,
+        speed: 1,
+        sourceWidth: 1080,
+        sourceHeight: 1920,
+      });
+      expect(plan.frameCount).toBeLessThanOrEqual(240);
+      expect(plan.width * plan.height * plan.frameCount).toBeLessThanOrEqual(
+        24_000_000,
+      );
+      expect(settings.fps).toBeLessThanOrEqual(preset.fps);
+    }
+  }
+});
+it("offers smaller palettes and more sampled frames through named presets", () => {
+  const small = videoGifPreset("small", 160, 90, 0, 1.5);
+  const balanced = videoGifPreset("balanced", 160, 90, 0, 1.5);
+  const smooth = videoGifPreset("smooth", 160, 90, 0, 1.5);
+  expect(small).toEqual({ fps: 8, colors: 64, width: 160 });
+  expect(balanced.fps).toBe(12);
+  expect(smooth.fps).toBe(20);
 });

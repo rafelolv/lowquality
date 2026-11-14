@@ -187,6 +187,39 @@ export function planVideoGif(input: VideoGifPlanInput): VideoGifPlan {
   };
 }
 
+export const VIDEO_GIF_PRESETS = [
+  { id: "small", label: "Smaller file", fps: 8, width: 320, colors: 64 },
+  { id: "balanced", label: "Balanced", fps: 12, width: 480, colors: 128 },
+  { id: "smooth", label: "Smoother motion", fps: 20, width: 640, colors: 256 },
+] as const;
+export type VideoGifPreset = (typeof VIDEO_GIF_PRESETS)[number]["id"];
+
+export function videoGifPreset(
+  id: VideoGifPreset,
+  sourceWidth: number,
+  sourceHeight: number,
+  start: number,
+  end: number,
+) {
+  const preset = VIDEO_GIF_PRESETS.find((item) => item.id === id)!;
+  const fps = Math.max(
+    1,
+    Math.min(preset.fps, Math.floor(MAX_VIDEO_GIF_FRAMES / (end - start))),
+  );
+  return {
+    fps,
+    colors: preset.colors,
+    width: defaultVideoGifWidth(
+      sourceWidth,
+      sourceHeight,
+      start,
+      end,
+      fps,
+      preset.width,
+    ),
+  };
+}
+
 /** Picks the largest default width that fits inside the GIF memory budget. */
 export function defaultVideoGifWidth(
   sourceWidth: number,
@@ -194,8 +227,9 @@ export function defaultVideoGifWidth(
   start: number,
   end: number,
   fps: number,
+  preferredWidth = MAX_VIDEO_GIF_DIMENSION,
 ): number {
-  const target = Math.min(MAX_VIDEO_GIF_DIMENSION, sourceWidth);
+  const target = Math.min(MAX_VIDEO_GIF_DIMENSION, sourceWidth, preferredWidth);
   const candidates = [target, 480, 400, 320, 240, 160, 120];
   const unique = Array.from(
     new Set(candidates.filter((value) => value >= 1 && value <= target)),

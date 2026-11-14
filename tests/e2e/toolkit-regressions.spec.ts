@@ -318,3 +318,113 @@ test("Batch cancelled and abandoned ZIP jobs cannot trigger a late download", as
   ).toBeVisible();
   expect(downloads).toEqual([]);
 });
+
+test("one Toolbox image follows navigation, replacement and removal; downloads are explicit", async ({
+  page,
+}) => {
+  const downloads: string[] = [];
+  page.on("download", (download) =>
+    downloads.push(download.suggestedFilename()),
+  );
+  await page.goto("/#toolbox/resize");
+  await page
+    .getByLabel("Toolbox image", { exact: true })
+    .setInputFiles(fixture("transparent.png"));
+  await expect(
+    page.getByRole("button", { name: "Process image", exact: true }),
+  ).toBeEnabled();
+  await navigation(page, "Convert").click();
+  const workbench = page.getByTestId("image-tools");
+  await expect(workbench.getByTestId("converter-convert")).toBeEnabled();
+  await expect(workbench).toContainText("transparent.png");
+  await workbench.getByTestId("converter-format-jpeg").click();
+  await workbench
+    .getByRole("button", { name: "Convert image", exact: true })
+    .click();
+  await expect(workbench.getByRole("status")).toContainText("transparent.jpg");
+  await expect(workbench.getByAltText("Processed result")).toBeVisible();
+  expect(downloads).toEqual([]);
+  const download = page.waitForEvent("download");
+  await workbench
+    .getByRole("button", { name: "Download result", exact: true })
+    .click();
+  expect((await download).suggestedFilename()).toBe("transparent.jpg");
+  await navigation(page, "Compress").click();
+  await expect(workbench.getByTestId("compressor-compress")).toBeEnabled();
+  await workbench
+    .getByRole("button", { name: "Compress image", exact: true })
+    .click();
+  await expect(workbench.getByTestId("compressor-result")).toBeVisible();
+  expect(downloads).toEqual(["transparent.jpg"]);
+  await workbench
+    .getByTestId("converter-file-input")
+    .setInputFiles(fixture("exif-gps.png"));
+  await expect(workbench.getByTestId("compressor-compress")).toBeEnabled();
+  await navigation(page, "Metadata").click();
+  await expect(page.getByText("Canon", { exact: true })).toBeVisible();
+  await page.locator(".toolkit-back").click();
+  await expect(page.locator(".toolkit-source-summary")).toContainText(
+    "exif-gps.png",
+  );
+  await page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link", { name: "Destroy", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "No disaster loaded" }),
+  ).toBeVisible();
+  await page
+    .getByRole("navigation", { name: "Main navigation" })
+    .getByRole("link", { name: "Toolbox", exact: true })
+    .click();
+  await navigation(page, "Resize & Crop").click();
+  await expect(
+    page.getByRole("button", { name: "Process image", exact: true }),
+  ).toBeEnabled();
+  await expect(page.locator(".toolkit-source-summary")).toContainText(
+    "exif-gps.png",
+  );
+  await page.getByRole("button", { name: "Remove image", exact: true }).click();
+  await navigation(page, "Convert").click();
+  await expect(workbench.getByTestId("converter-convert")).toBeDisabled();
+  await expect(workbench.getByAltText("Original image")).toHaveCount(0);
+});
+
+test("video presets adjust sampling together and custom controls remain available", async ({
+  page,
+}) => {
+  await video(page);
+  await expect(page.getByLabel("GIF preset", { exact: true })).toHaveValue(
+    "balanced",
+  );
+  await page.getByLabel("GIF preset", { exact: true }).selectOption("small");
+  await expect(
+    page.getByLabel("Frames per second", { exact: true }),
+  ).toHaveValue("8");
+  await expect(page.getByLabel("Palette colors", { exact: true })).toHaveValue(
+    "64",
+  );
+  await page.getByLabel("Clip end", { exact: true }).fill("1");
+  await expect(page.getByLabel("GIF preset", { exact: true })).toHaveValue(
+    "small",
+  );
+  await expect(
+    page.getByRole("group", { name: "GIF output plan" }),
+  ).toContainText("8");
+  await page.getByLabel("GIF preset", { exact: true }).selectOption("smooth");
+  await expect(
+    page.getByLabel("Frames per second", { exact: true }),
+  ).toHaveValue("20");
+  await expect(page.getByLabel("Palette colors", { exact: true })).toHaveValue(
+    "256",
+  );
+  await expect(
+    page.getByRole("button", { name: "Convert to GIF", exact: true }),
+  ).toBeEnabled();
+  await page
+    .getByLabel("Frames per second", { exact: true })
+    .selectOption("10");
+  await expect(page.getByLabel("GIF preset", { exact: true })).toHaveValue(
+    "custom",
+  );
+});

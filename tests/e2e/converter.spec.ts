@@ -57,6 +57,12 @@ test.describe("image converter", () => {
     await workbench.getByTestId("converter-format-jpeg").click();
     const jpgDownloadPromise = page.waitForEvent("download");
     await convert.click();
+    await expect(
+      workbench.getByRole("button", { name: "Download result", exact: true }),
+    ).toBeVisible();
+    await workbench
+      .getByRole("button", { name: "Download result", exact: true })
+      .click();
     const jpgDownload = await jpgDownloadPromise;
     expect(jpgDownload.suggestedFilename()).toBe("transparent.jpg");
     const jpgPath = testInfo.outputPath("transparent.jpg");
@@ -72,6 +78,12 @@ test.describe("image converter", () => {
     await workbench.getByTestId("converter-format-webp").click();
     const webpDownloadPromise = page.waitForEvent("download");
     await convert.click();
+    await expect(
+      workbench.getByRole("button", { name: "Download result", exact: true }),
+    ).toBeVisible();
+    await workbench
+      .getByRole("button", { name: "Download result", exact: true })
+      .click();
     const webpDownload = await webpDownloadPromise;
     expect(webpDownload.suggestedFilename()).toBe("transparent.webp");
     const webpPath = testInfo.outputPath("transparent.webp");
@@ -93,7 +105,7 @@ test.describe("image converter", () => {
     await expect(workbench.getByAltText("Original image")).toBeVisible();
     await page
       .getByRole("navigation", { name: "Main navigation" })
-      .getByRole("link", { name: "Editor", exact: true })
+      .getByRole("link", { name: "Destroy", exact: true })
       .click();
     await expect(workbench).toHaveCount(0);
   });

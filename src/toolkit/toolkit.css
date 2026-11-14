@@ -864,3 +864,18 @@
     padding-inline: 6px;
   }
 }
+
+.toolkit-source-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.toolkit-source-summary p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.toolkit-source-summary .button {
+  flex: none;
+}

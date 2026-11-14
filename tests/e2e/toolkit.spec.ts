@@ -601,7 +601,7 @@ test("toolbox processing preserves the destruction editor session", async ({
   await resultBytes(page);
   await page
     .getByRole("navigation", { name: "Main navigation" })
-    .getByRole("link", { name: "Editor", exact: true })
+    .getByRole("link", { name: "Destroy", exact: true })
     .click();
   expect(await canvasSignature(page, "original-canvas")).toBe(before);
   await expect(page.getByTestId("download-disaster")).toBeEnabled();

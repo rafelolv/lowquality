@@ -36,6 +36,12 @@ test.describe("image compressor", () => {
 
     const webpDownloadPromise = page.waitForEvent("download");
     await compress.click();
+    await expect(
+      workbench.getByRole("button", { name: "Download result", exact: true }),
+    ).toBeVisible();
+    await workbench
+      .getByRole("button", { name: "Download result", exact: true })
+      .click();
     const webpDownload = await webpDownloadPromise;
     expect(webpDownload.suggestedFilename()).toBe(
       "sample-destroyed-compressed.webp",
@@ -55,6 +61,12 @@ test.describe("image compressor", () => {
     await workbench.getByTestId("compressor-format-jpeg").click();
     const jpgDownloadPromise = page.waitForEvent("download");
     await compress.click();
+    await expect(
+      workbench.getByRole("button", { name: "Download result", exact: true }),
+    ).toBeVisible();
+    await workbench
+      .getByRole("button", { name: "Download result", exact: true })
+      .click();
     const jpgDownload = await jpgDownloadPromise;
     expect(jpgDownload.suggestedFilename()).toBe(
       "sample-destroyed-compressed.jpg",
@@ -112,6 +124,12 @@ test.describe("image compressor", () => {
 
     const downloadPromise = page.waitForEvent("download");
     await compress.click();
+    await expect(
+      workbench.getByRole("button", { name: "Download result", exact: true }),
+    ).toBeVisible();
+    await workbench
+      .getByRole("button", { name: "Download result", exact: true })
+      .click();
     const download = await downloadPromise;
     const outputPath = testInfo.outputPath("custom-target.webp");
     await download.saveAs(outputPath);
@@ -188,6 +206,12 @@ test.describe("image compressor", () => {
 
     const downloadPromise = page.waitForEvent("download");
     await compress.click();
+    await expect(
+      workbench.getByRole("button", { name: "Download result", exact: true }),
+    ).toBeVisible();
+    await workbench
+      .getByRole("button", { name: "Download result", exact: true })
+      .click();
     const download = await downloadPromise;
     const outputPath = testInfo.outputPath("capped.webp");
     await download.saveAs(outputPath);

@@ -20,12 +20,14 @@ export function ToolsSection({ onOpenTool }: ToolsSectionProps) {
             <span className="text-yellow">needs to suffer.</span>
           </h2>
           <p>
-            Clean tools for the files you actually want to keep. Same
-            local-only deal: nothing leaves this tab.
+            Clean tools for the files you actually want to keep. Same local-only
+            deal: nothing leaves this tab.
           </p>
         </div>
 
-        <a className="button" href="#toolbox">Open Toolbox</a>
+        <a className="button" href="#toolbox">
+          Open Toolbox
+        </a>
         <div className="tools-grid tools-grid--features">
           <button
             type="button"
@@ -38,7 +40,8 @@ export function ToolsSection({ onOpenTool }: ToolsSectionProps) {
             </span>
             <span className="tool-card__title">Convert</span>
             <span className="tool-card__body">
-              Convert PNG, JPG and WebP locally. JPG and WebP can be lossy.
+              Change image format between PNG, JPG and WebP. Keep the original
+              dimensions.
             </span>
             <span className="tool-card__cta">Open converter →</span>
           </button>
@@ -57,8 +60,8 @@ export function ToolsSection({ onOpenTool }: ToolsSectionProps) {
             </span>
             <span className="tool-card__title">Compress</span>
             <span className="tool-card__body">
-              Set a size target, quality floor and resolution cap. Pixels shrink
-              only when the target demands it.
+              Reduce file size to a target. Choose how much quality and
+              resolution to keep.
             </span>
             <span className="tool-card__cta">Open compressor →</span>
           </button>
