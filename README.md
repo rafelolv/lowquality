@@ -4,7 +4,7 @@
 
 <p><a href="https://rafelolv.github.io/lowquality/">Try it live ↗</a></p>
 
-LowQuality is a browser-only image destruction studio. Drop in a JPEG, PNG, WebP, BMP, AVIF, SVG, or animated GIF, crank the **HOW BAD?** slider, and download the evidence. Every pixel is processed inside the tab: there is no backend, no account, no server upload, and no analytics.
+LowQuality combines a browser-only image destruction studio with a Toolbox for everyday image and GIF edits. In Destroy, drop in a JPEG, PNG, WebP, BMP, AVIF, SVG, or animated GIF, crank the **HOW BAD?** slider, and download the evidence. Every pixel is processed inside the tab: there is no backend, no account, no server upload, and no analytics.
 
 The interface is a deliberately unsubtle retro 8-bit console: dark purple checkerboard, thick violet panels, gold buttons, pixel typography, a tiny skyline, and Bitrot the mascot.
 
@@ -24,9 +24,9 @@ The interface is a deliberately unsubtle retro 8-bit console: dark purple checke
 - **Reset edits** restores the original pixels and removes added text while keeping the loaded file. Clear removes the file entirely.
 - **Live preview** with original/result/compare modes, playback for GIFs, fit-to-window zoom, and a draggable text box.
 - **Exports:** PNG, JPG, WebP, and animated GIF. Copying a destroyed PNG to the clipboard is supported where the browser allows it.
-- **LowQuality Toolbox:** a separate, local-only workspace at `#toolbox` with seven practical tools: Resize & Crop, Batch, Metadata, Favicon, Redact, GIF Kit, and Video to GIF. Each has its own hash route, and stills stay loaded while switching tools.
+- **LowQuality Toolbox:** a separate, local-only workspace at `#toolbox` with nine practical tools: Convert, Compress, Resize & Crop, Batch, Metadata, Favicon, Redact, GIF Kit, and Video to GIF. Each has its own hash route, and stills stay loaded while switching tools.
 - **Video to GIF:** trim an MP4, WEBM, M4V or MOV clip, pick a frame rate, width, palette, speed, loop and direction, then capture and encode it in a local worker. AVI, WMV and MPEG are explained in the UI instead of being uploaded to a server that does not exist.
-- **Mercy tools:** convert stills between PNG, JPG, and WebP without applying any degradation.
+- **Image conversion:** convert stills between PNG, JPG, and WebP without destruction effects; JPG and WebP encoding can be lossy.
 - **Target-size compressor:** pick a percentage, a fixed budget, or type a custom MB target. The worker searches for the highest WebP or JPG quality that fits, with optional resolution caps and a minimum-quality floor so dimensions only shrink when the target truly demands it.
 - **Safe limits and scaling options** before a GIF can exhaust memory.
 - **Responsive, keyboard-friendly, accessible UI** with reduced-motion support. Uploading compacts the header and focuses the editor. Preview and HOW BAD? stay together, presets use a compact grid, the desktop studio follows expanded controls, and mobile download/copy/progress/cancel actions stay in a bottom dock.
@@ -39,6 +39,8 @@ The Toolbox is a separate workspace that shares the LowQuality shell, tokens, an
 | Route               | Tool                                   |
 | ------------------- | -------------------------------------- |
 | `#toolbox`          | Tool landing and tool cards            |
+| `#toolbox/convert`  | Convert PNG, JPG and WebP              |
+| `#toolbox/compress` | Compress toward a target file size     |
 | `#toolbox/resize`   | Resize, crop, rotate, flip, and encode |
 | `#toolbox/batch`    | Multi-file queue with ZIP download     |
 | `#toolbox/metadata` | Read EXIF/GPS and reencode clean files |
@@ -47,7 +49,7 @@ The Toolbox is a separate workspace that shares the LowQuality shell, tokens, an
 | `#toolbox/gif`      | GIF recode, reverse, speed, extract    |
 | `#toolbox/video`    | Trim video, sample frames, encode GIF  |
 
-Stills stay loaded while switching between single-file tools. Heavy decoding, transformation, compression, and GIF work runs in `src/workers/toolkit.worker.ts`; files never leave the tab.
+The original file stays loaded across single-image tools, including Convert and Compress, and when leaving and returning to Toolbox. Destroy, Batch, and Video to GIF keep their own files. Tools generate a result for review; downloading is a separate action. Heavy image work runs in the local processing workers.
 
 ## Quick start
 

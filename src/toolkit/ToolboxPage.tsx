@@ -269,7 +269,7 @@ export function ToolboxPage({
       <div
         className={`toolkit-heading${tool ? " toolkit-heading--active" : ""}`}
       >
-        <p className="eyebrow">The mercy department · Stays local</p>
+        <p className="eyebrow">Image & GIF tools</p>
         <h1>
           LowQuality <span className="text-yellow">Toolbox</span>
         </h1>
@@ -339,7 +339,7 @@ export function ToolboxPage({
               </span>
             )}
             <div className="toolkit-tool-heading__copy">
-              <p className="eyebrow">The mercy department · Stays local</p>
+              <p className="eyebrow">Toolbox</p>
               <h2 id="toolkit-tool-title">{activeTool?.name}</h2>
               <p>{activeTool?.description}</p>
             </div>

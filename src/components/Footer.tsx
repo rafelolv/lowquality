@@ -35,12 +35,7 @@ function PixelGround() {
   );
 }
 
-interface FooterProps {
-  onOpenConverter: () => void;
-  onOpenCompressor: () => void;
-}
-
-export function Footer({ onOpenConverter, onOpenCompressor }: FooterProps) {
+export function Footer() {
   return (
     <footer className="site-footer">
       <div className="footer-ground-wrap">
@@ -57,22 +52,6 @@ export function Footer({ onOpenConverter, onOpenCompressor }: FooterProps) {
 
         <nav className="site-footer__nav" aria-label="Footer navigation">
           <a href="#editor">Destroy</a>
-          <button
-            type="button"
-            onClick={onOpenConverter}
-            title="Convert an image without destroying it"
-            data-testid="open-converter"
-          >
-            Convert
-          </button>
-          <button
-            type="button"
-            onClick={onOpenCompressor}
-            title="Compress an image without wrecking it"
-            data-testid="open-compressor"
-          >
-            Compress
-          </button>
           <a href="#toolbox">Toolbox</a>
           <a href="#how-it-works">How It Works</a>
           <a href="#about">About</a>
@@ -84,18 +63,6 @@ export function Footer({ onOpenConverter, onOpenCompressor }: FooterProps) {
             <span className="visually-hidden">love</span> for the bitrot age. MIT
             licensed.
           </p>
-          <span className="site-footer__fine">
-            No servers. No accounts.{" "}
-            <button
-              type="button"
-              className="site-footer__mercy"
-              onClick={onOpenConverter}
-              title="Psst. Some mercy: convert an image without the damage."
-              aria-label="Open the image converter"
-            >
-              No mercy.
-            </button>
-          </span>
         </div>
       </div>
     </footer>

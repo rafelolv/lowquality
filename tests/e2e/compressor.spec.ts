@@ -16,7 +16,11 @@ test.describe("image compressor", () => {
     testInfo.setTimeout(120_000);
     await page.goto("/");
 
-    await page.getByTestId("open-compressor").click();
+    await page
+      .getByRole("navigation", { name: "Main navigation" })
+      .getByRole("link", { name: "Toolbox", exact: true })
+      .click();
+    await page.getByTestId("toolbox-compress-card").click();
     const workbench = page.getByTestId("image-tools");
     await expect(
       page.getByRole("heading", { name: "Compress", exact: true }),
@@ -98,7 +102,11 @@ test.describe("image compressor", () => {
     testInfo.setTimeout(120_000);
     await page.goto("/");
 
-    await page.getByTestId("open-compressor").click();
+    await page
+      .getByRole("navigation", { name: "Main navigation" })
+      .getByRole("link", { name: "Toolbox", exact: true })
+      .click();
+    await page.getByTestId("toolbox-compress-card").click();
     const workbench = page.getByTestId("image-tools");
     const chooserPromise = page.waitForEvent("filechooser");
     await workbench.locator(".converter-drop").click();
@@ -178,7 +186,11 @@ test.describe("image compressor", () => {
       return canvas.toDataURL("image/png");
     });
 
-    await page.getByTestId("open-compressor").click();
+    await page
+      .getByRole("navigation", { name: "Main navigation" })
+      .getByRole("link", { name: "Toolbox", exact: true })
+      .click();
+    await page.getByTestId("toolbox-compress-card").click();
     const workbench = page.getByTestId("image-tools");
     await workbench.getByTestId("converter-file-input").setInputFiles({
       name: "gradient-source.png",

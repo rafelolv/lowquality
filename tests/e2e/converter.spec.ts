@@ -2,31 +2,40 @@ import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { fixture } from "./helpers";
 
-test("Convert and Compress are square feature cards on desktop and mobile", async ({
+test("home uses one compact Toolbox entry instead of duplicate tool cards", async ({
   page,
 }) => {
   await page.goto("/");
-  const cards = page.locator(".tools-grid--features .tool-card");
-  await expect(cards).toHaveCount(2);
-
-  for (const width of [1280, 390]) {
+  const callout = page.locator("#tools");
+  await expect(
+    callout.getByRole("heading", { name: "Need a useful edit instead?" }),
+  ).toBeVisible();
+  await expect(callout.locator(".tool-card")).toHaveCount(0);
+  const link = callout.getByRole("link", {
+    name: "Explore all 9 tools",
+    exact: true,
+  });
+  await expect(link).toHaveAttribute("href", "#toolbox");
+  for (const width of [1280, 390, 320]) {
     await page.setViewportSize({ width, height: 844 });
-    await cards.first().scrollIntoViewIfNeeded();
-    const dimensions = await cards.evaluateAll((elements) =>
-      elements.map((element) => {
-        const { width, height } = element.getBoundingClientRect();
-        return { width, height };
-      }),
-    );
-    for (const { width: cardWidth, height: cardHeight } of dimensions)
-      expect(Math.abs(cardWidth - cardHeight)).toBeLessThanOrEqual(1);
+    await callout.scrollIntoViewIfNeeded();
+    await expect(link).toBeInViewport();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - innerWidth,
+      ),
+    ).toBe(0);
   }
-
-  await page.getByTestId("open-converter-card").click();
-  await expect(page.getByTestId("image-tools")).toBeVisible();
-  await page.goto("/");
-  await page.getByTestId("open-compressor-card").click();
-  await expect(page.getByTestId("image-tools")).toBeVisible();
+  const footer = page.getByRole("navigation", { name: "Footer navigation" });
+  await expect(footer.getByRole("link")).toHaveText([
+    "Destroy",
+    "Toolbox",
+    "How It Works",
+    "About",
+  ]);
+  await expect(page.locator(".site-footer button")).toHaveCount(0);
+  await link.click();
+  await expect(page.locator(".toolkit-cards .tool-card")).toHaveCount(9);
 });
 
 test.describe("image converter", () => {
@@ -36,7 +45,11 @@ test.describe("image converter", () => {
     testInfo.setTimeout(120_000);
     await page.goto("/");
 
-    await page.getByTestId("open-converter").click();
+    await page
+      .getByRole("navigation", { name: "Main navigation" })
+      .getByRole("link", { name: "Toolbox", exact: true })
+      .click();
+    await page.getByTestId("toolbox-convert-card").click();
     const workbench = page.getByTestId("image-tools");
     await expect(page).toHaveURL(/#toolbox\/convert$/);
     await expect(
@@ -227,4 +240,45 @@ test("cancel and route changes ignore late export results", async ({
     ).toBeEnabled();
     expect(downloads).toEqual([]);
   }
+});
+
+test("information sections remain reachable from the Toolbox", async ({
+  page,
+}) => {
+  for (const navigation of ["Main navigation", "Footer navigation"]) {
+    for (const [name, id] of [
+      ["How It Works", "how-it-works"],
+      ["About", "about"],
+    ]) {
+      await page.goto("/#toolbox/resize");
+      await page
+        .getByRole("navigation", { name: navigation })
+        .getByRole("link", { name, exact: true })
+        .click();
+      await expect(page.locator(`#${id}`)).toBeInViewport();
+      await expect(
+        page
+          .getByRole("navigation", { name: "Main navigation" })
+          .getByRole("link", { name, exact: true }),
+      ).toHaveAttribute("aria-current", "page");
+    }
+  }
+});
+
+test("browser history restores information sections after visiting Toolbox", async ({
+  page,
+}) => {
+  await page.goto("/#about");
+  await expect(page.locator("#about")).toBeInViewport();
+  await page
+    .getByRole("navigation", { name: "Footer navigation" })
+    .getByRole("link", { name: "Toolbox", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "LowQuality Toolbox" }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(page.locator("#about")).toBeInViewport();
+  await page.goForward();
+  await expect(page).toHaveURL(/#toolbox$/);
 });

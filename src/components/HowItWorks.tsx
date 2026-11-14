@@ -26,14 +26,13 @@ export function HowItWorks() {
     <section className="site-section" id="how-it-works" aria-labelledby="how-heading">
       <div className="container">
         <div className="section-heading">
-          <p className="eyebrow">The process</p>
+          <p className="eyebrow">Using Destroy</p>
           <h2 id="how-heading">
             Good taste, <span className="text-yellow">three steps away.</span>
           </h2>
           <p>
-            LowQuality is a tiny image-destruction studio that runs entirely inside your
-            browser. No login screen, no server round-trip, no mysterious
-            machinery.
+            Load a photo or animated GIF in Destroy, adjust the damage and
+            review the preview before downloading.
           </p>
         </div>
 

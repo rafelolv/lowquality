@@ -1,30 +1,40 @@
-import { Github, Heart, LockKeyhole, ShieldCheck, TriangleAlert } from 'lucide-react';
-import { GITHUB_URL } from '../lib/site';
+import {
+  AppWindow,
+  Github,
+  Heart,
+  ShieldCheck,
+  TriangleAlert,
+} from "lucide-react";
+import { GITHUB_URL } from "../lib/site";
 
 export function About() {
   return (
-    <section className="site-section site-section--about" id="about" aria-labelledby="about-heading">
+    <section
+      className="site-section site-section--about"
+      id="about"
+      aria-labelledby="about-heading"
+    >
       <div className="container about-grid">
         <div className="about-copy">
           <p className="eyebrow">About the operation</p>
           <h2 id="about-heading">
-            A small tool for <span className="text-yellow">big mistakes.</span>
+            A small app for <span className="text-yellow">big mistakes.</span>
           </h2>
           <p>
-            LowQuality is a free, open-source toy for making images and animations look
-            delightfully worse. It was built for the bitrot age: a place where a crisp
-            photo can become a crunchy, noisy, pixelated artifact in a few seconds.
+            LowQuality has two workspaces: Destroy adds compression, noise and
+            glitches to photos and animated GIFs. Toolbox handles practical
+            edits such as conversion, resizing, compression and redaction.
           </p>
           <p>
-            Everything runs locally with React, Canvas and Web Workers. Text is burned
-            into the image before the damage starts, which means it gets compressed,
-            noised and glitched along with everything else. No sharp overlays sneaking
-            through.
+            Everything runs locally with React, Canvas and Web Workers. In
+            Destroy, text is burned into the image before the damage starts, so
+            it gets compressed, noised and glitched along with everything else.
+            No sharp overlays sneaking through.
           </p>
           <p>
-            The sample artwork is original project work, bundled locally under the same
-            MIT license as the code. No stock-photo mysteries, no tracking pixels, no
-            accounts.
+            The sample artwork is original project work, bundled locally under
+            the same MIT license as the code. No stock-photo mysteries, no
+            tracking pixels, no accounts.
           </p>
 
           <div className="about-actions">
@@ -47,12 +57,12 @@ export function About() {
         <div className="about-facts">
           <article className="panel fact-card">
             <span className="fact-card__icon" aria-hidden="true">
-              <LockKeyhole size={20} />
+              <AppWindow size={20} />
             </span>
-            <h3>Private by architecture</h3>
+            <h3>Destroy & Toolbox</h3>
             <p>
-              File bytes are decoded in your tab. There is no backend, no analytics and
-              no remote image service.
+              Toolbox image tools share one original file as you switch between
+              them. Destroy keeps its own image and settings.
             </p>
           </article>
 
@@ -62,8 +72,9 @@ export function About() {
             </span>
             <h3>Practical limits</h3>
             <p>
-              Static files up to 30 MB and 32 megapixels. GIFs up to 25 MB, 240 frames
-              and a safe decoded-pixel budget. Oversized GIFs get a scaling chooser.
+              Images: up to 30 MB and 32 megapixels. GIF input: up to 25 MB and
+              240 frames; Destroy offers scaling for oversized GIFs. Video to
+              GIF accepts up to 250 MB, with separate clip and frame limits.
             </p>
           </article>
 
@@ -73,8 +84,9 @@ export function About() {
             </span>
             <h3>Formats, honestly</h3>
             <p>
-              JPEG, PNG, WebP, BMP, AVIF and SVG in; PNG, JPG, WebP and animated GIF out.
-              HEIC is rejected politely because browser support is a lottery.
+              Destroy accepts still images and animated GIFs. Toolbox adds MP4,
+              WebM, M4V and MOV video input, plus icon and ZIP exports. Each
+              tool lists its supported formats; HEIC/HEIF is not supported.
             </p>
           </article>
         </div>

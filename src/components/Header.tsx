@@ -1,16 +1,27 @@
-import { Github } from 'lucide-react';
-import { Mascot } from './Mascot';
-import { HeaderArt } from './HeaderArt';
-import { GITHUB_URL } from '../lib/site';
+import { Github } from "lucide-react";
+import { Mascot } from "./Mascot";
+import { HeaderArt } from "./HeaderArt";
+import { GITHUB_URL } from "../lib/site";
 
 const navigation = [
-  { href: '#editor', label: 'Destroy', active: true },
-  { href: '#toolbox', label: 'Toolbox' },
-  { href: '#how-it-works', label: 'How It Works' },
-  { href: '#about', label: 'About' },
+  { href: "#editor", label: "Destroy" },
+  { href: "#toolbox", label: "Toolbox" },
+  { href: "#how-it-works", label: "How It Works" },
+  { href: "#about", label: "About" },
 ];
 
-export function Header({ toolbox = false }: { toolbox?: boolean }) {
+export function Header({
+  toolbox = false,
+  hash = "",
+}: {
+  toolbox?: boolean;
+  hash?: string;
+}) {
+  const activeHref = toolbox
+    ? "#toolbox"
+    : ["#how-it-works", "#about"].includes(hash)
+      ? hash
+      : "#editor";
   return (
     <header className="site-header">
       <HeaderArt />
@@ -27,7 +38,11 @@ export function Header({ toolbox = false }: { toolbox?: boolean }) {
           <span>GitHub</span>
         </a>
 
-        <a className="brand" href="#editor" aria-label="LowQuality - open Destroy editor">
+        <a
+          className="brand"
+          href="#editor"
+          aria-label="LowQuality - open Destroy editor"
+        >
           <Mascot className="brand__mascot" />
           <span className="brand__copy">
             <span className="brand__name" aria-label="LowQuality">
@@ -42,8 +57,8 @@ export function Header({ toolbox = false }: { toolbox?: boolean }) {
             <a
               key={item.href}
               href={item.href}
-              className={`pixel-nav-link${(toolbox ? item.href === '#toolbox' : item.active) ? ' pixel-nav-link--active' : ''}`}
-              aria-current={(toolbox ? item.href === '#toolbox' : item.active) ? 'page' : undefined}
+              className={`pixel-nav-link${item.href === activeHref ? " pixel-nav-link--active" : ""}`}
+              aria-current={item.href === activeHref ? "page" : undefined}
             >
               {item.label}
             </a>

@@ -2,6 +2,7 @@ import { ToolboxPage } from "./toolkit/ToolboxPage";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -39,7 +40,6 @@ import type {
   SettingsOverrides,
   StaticSession,
   TextLayer,
-  ToolMode,
   ViewMode,
 } from "./types";
 import {
@@ -131,6 +131,17 @@ export default function App() {
     return () => window.removeEventListener("hashchange", update);
   }, []);
   const isToolbox = hash === "#toolbox" || hash.startsWith("#toolbox/");
+  // Information sections are hidden while Toolbox is mounted. Native anchor
+  // scrolling runs before React reveals them, so scroll after the DOM update.
+  useLayoutEffect(() => {
+    if (isToolbox) return;
+    const id = hash.slice(1);
+    if (["editor", "tools", "how-it-works", "about"].includes(id)) {
+      document
+        .getElementById(id)
+        ?.scrollIntoView({ block: "start", behavior: "instant" });
+    }
+  }, [hash, isToolbox]);
   const support = useMemo(() => checkBrowserSupport(), []);
   const fontsReady = useFontsReady();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -214,12 +225,6 @@ export default function App() {
   const dismissNotice = useCallback((id: number) => {
     setNotices((previous) => previous.filter((notice) => notice.id !== id));
   }, []);
-
-  const openTool = useCallback((mode: ToolMode) => {
-    window.location.hash = `toolbox/${mode}`;
-  }, []);
-  const openConverter = useCallback(() => openTool("convert"), [openTool]);
-  const openCompressor = useCallback(() => openTool("compress"), [openTool]);
 
   const replacePreview = useCallback((next: PreviewResult | null) => {
     const previous = previewRef.current;
@@ -1105,7 +1110,7 @@ export default function App() {
       >
         {isToolbox ? "Skip to the toolbox" : "Skip to Destroy"}
       </a>
-      <Header toolbox={isToolbox} />
+      <Header toolbox={isToolbox} hash={hash} />
 
       <div className="ticker" aria-hidden="true" hidden={isToolbox}>
         <div className="ticker__track">
@@ -1320,15 +1325,12 @@ export default function App() {
           </section>
         </div>
 
-        <ToolsSection onOpenTool={openTool} />
+        <ToolsSection />
         <HowItWorks />
         <About />
       </main>
 
-      <Footer
-        onOpenConverter={openConverter}
-        onOpenCompressor={openCompressor}
-      />
+      <Footer />
       <ToastStack notices={notices} onDismiss={dismissNotice} />
 
       {gifScalePending && (
