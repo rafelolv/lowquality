@@ -1141,38 +1141,7 @@
   color: var(--green);
 }
 
-/* --------------------------------------------------------------------------
-   Secret converter
-   -------------------------------------------------------------------------- */
-
-.converter-dialog {
-  width: min(600px, 100%);
-}
-
-.converter-dialog--toolbox {
-  background: var(--panel-raised);
-  border: 3px solid var(--line);
-  border-radius: var(--radius-sm);
-  box-shadow: 6px 6px 0 var(--line);
-}
-
-.converter-dialog--toolbox .dialog__icon {
-  background: var(--yellow);
-}
-
-.converter-dialog--toolbox .tool-switch {
-  background: var(--panel-deep);
-  border-color: var(--line-soft);
-}
-
-.converter-dialog--toolbox .tool-switch__button--active {
-  background: var(--violet-deep);
-  border-color: var(--lavender);
-}
-
-.converter-dialog__icon {
-  background: var(--green);
-}
+/* Image conversion and compression controls */
 
 .converter-drop {
   width: 100%;
@@ -1336,53 +1305,6 @@
 
 .converter-result--compressed {
   border-left-color: var(--green);
-}
-
-.tool-switch {
-  display: inline-flex;
-  gap: 3px;
-  margin-bottom: 16px;
-  padding: 3px;
-  background: rgba(10, 3, 19, 0.65);
-  border: 2px solid var(--line);
-  border-radius: 4px;
-}
-
-.tool-switch__button {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 10px;
-  color: var(--lavender);
-  background: transparent;
-  border: 2px solid transparent;
-  border-radius: 2px;
-  font-family: var(--font-pixel);
-  font-size: 7px;
-  line-height: 1.4;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.tool-switch__button:hover:not(:disabled) {
-  color: var(--cream);
-  background: rgba(139, 92, 246, 0.18);
-}
-
-.tool-switch__button--active {
-  color: var(--yellow);
-  background: var(--panel);
-  border-color: var(--line-soft);
-  box-shadow: inset 0 -3px 0 var(--yellow);
-}
-
-.tool-switch__button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .converter-hint {

@@ -13,20 +13,16 @@ import {
   dimension,
   type Rect,
 } from "../lib/toolkit/geometry";
-import type { ToolMode } from "../types";
+import { UploadCloud, LockKeyhole, ArrowLeft } from "lucide-react";
+import { ImageTools } from "./ImageTools";
+import { formatFileSize } from "../lib/imageLoader";
 import { startJob } from "./client";
 import { Batch } from "./Batch";
 import { OutputControls } from "./controls";
 import { RegionEditor } from "./RegionEditor";
 import { ResultCard } from "./ResultCard";
 import "./toolkit.css";
-export function ToolboxPage({
-  hash,
-  onOpenTool,
-}: {
-  hash: string;
-  onOpenTool: (mode: ToolMode) => void;
-}) {
+export function ToolboxPage({ hash }: { hash: string }) {
   const activeTool = tools.find((item) => `#toolbox/${item.id}` === hash);
   const tool = activeTool?.id;
   const [file, setFile] = useState<File | null>(null);
@@ -50,7 +46,31 @@ export function ToolboxPage({
   const jobRef = useRef<ReturnType<typeof startJob> | null>(null);
   const version = useRef(0);
   const change = (patch: Partial<Options>) => {
-    setOptions((o) => ({ ...o, ...patch }));
+    setOptions((o) => {
+      const next = { ...o, ...patch };
+      if (
+        cropLocked &&
+        source &&
+        (patch.width !== undefined ||
+          patch.height !== undefined ||
+          patch.rotation !== undefined)
+      ) {
+        next.crop = aspectCrop(
+          next.crop ?? {
+            x: 0,
+            y: 0,
+            width: source.width,
+            height: source.height,
+          },
+          source.width,
+          source.height,
+          next.rotation % 180
+            ? next.height / next.width
+            : next.width / next.height,
+        );
+      }
+      return next;
+    });
     setResult(null);
   };
   useEffect(() => {
@@ -61,9 +81,21 @@ export function ToolboxPage({
     setResult(null);
     setError("");
     mainRef.current?.focus({ preventScroll: true });
+    mainRef.current
+      ?.querySelector('.toolkit-nav [aria-current="page"]')
+      ?.scrollIntoView({ block: "nearest", inline: "center" });
     // A hash change is this app's navigation. Start each tool at the top so
     // the site header and the toolbox tabs stay reachable.
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    // A GIF inspection includes frames; static inspections cannot be reused by GIF Kit.
+    if (
+      file &&
+      tool &&
+      !["convert", "compress", "batch", "video"].includes(tool) &&
+      (!source || Boolean(source.frames) !== (tool === "gif"))
+    ) {
+      void load(file);
+    }
   }, [tool]);
   useEffect(
     () => () => {
@@ -93,10 +125,18 @@ export function ToolboxPage({
     const job = startJob(
       {
         file: next,
-        options: { ...defaults, tool: tool ?? "resize" },
+        options: {
+          ...defaults,
+          tool:
+            tool === "convert" || tool === "compress"
+              ? "resize"
+              : (tool ?? "resize"),
+        },
         inspect: true,
       },
-      setProgress,
+      (value) => {
+        if (token === version.current) setProgress(value);
+      },
     );
     jobRef.current = job;
     try {
@@ -105,6 +145,8 @@ export function ToolboxPage({
       setSource(value);
       setOptions({ ...defaults, width: value.width, height: value.height });
       setPreset("Custom");
+      setLocked(true);
+      setCropLocked(false);
     } catch (e) {
       if (
         token === version.current &&
@@ -119,7 +161,7 @@ export function ToolboxPage({
     }
   }
   async function run(extract = false) {
-    if (!file || !tool) return;
+    if (!file || !tool || tool === "convert" || tool === "compress") return;
     const token = ++version.current;
     jobRef.current?.cancel();
     setBusy(true);
@@ -146,7 +188,9 @@ export function ToolboxPage({
               }),
         },
       },
-      setProgress,
+      (value) => {
+        if (token === version.current) setProgress(value);
+      },
     );
     jobRef.current = job;
     try {
@@ -185,7 +229,9 @@ export function ToolboxPage({
               crop,
               source.width,
               source.height,
-              options.width / options.height,
+              options.rotation % 180
+                ? options.height / options.width
+                : options.width / options.height,
             )
           : crop,
     });
@@ -205,12 +251,18 @@ export function ToolboxPage({
       className="container toolkit"
       id="toolbox"
     >
-      <div className="toolkit-heading">
+      <div
+        className={`toolkit-heading${tool ? " toolkit-heading--active" : ""}`}
+      >
         <p className="eyebrow">The mercy department · Stays local</p>
         <h1>
           LowQuality <span className="text-yellow">Toolbox</span>
         </h1>
-        <p>Useful pixels. Questionable management. No server uploads.</p>
+        <p>Good tools. Bad attitude. Give your files a little mercy.</p>
+        <div className="toolkit-trust">
+          <LockKeyhole size={15} aria-hidden="true" /> 9 tools. Zero uploads.
+          All yours.
+        </div>
       </div>
       <nav className="toolkit-nav" aria-label="Toolbox navigation">
         <a
@@ -227,17 +279,33 @@ export function ToolboxPage({
             href={`#toolbox/${item.id}`}
             aria-current={tool === item.id ? "page" : undefined}
           >
+            <item.icon size={15} aria-hidden="true" />
             {item.name}
           </a>
         ))}
       </nav>
       {!tool ? (
-        <ToolboxCards onOpenTool={onOpenTool} />
+        <>
+          <div className="toolkit-intro">
+            <div>
+              <p className="eyebrow">Small fixes. Big relief.</p>
+              <h2>What do your pixels need?</h2>
+            </div>
+            <p>
+              Pick a tool, adjust the details, save your file. Everything
+              happens right here in your browser.
+            </p>
+          </div>
+          <ToolboxCards />
+        </>
       ) : (
         <section
           className="toolkit-tool-shell"
           aria-labelledby="toolkit-tool-title"
         >
+          <a className="toolkit-back" href="#toolbox">
+            <ArrowLeft size={15} aria-hidden="true" /> All tools
+          </a>
           <header className="toolkit-tool-heading">
             {activeTool && (
               <span className="dialog__icon" aria-hidden="true">
@@ -250,7 +318,9 @@ export function ToolboxPage({
               <p>{activeTool?.description}</p>
             </div>
           </header>
-          {tool === "batch" ? (
+          {tool === "convert" || tool === "compress" ? (
+            <ImageTools mode={tool} />
+          ) : tool === "batch" ? (
             <Batch />
           ) : tool === "video" ? (
             <VideoToGifTool />
@@ -266,8 +336,16 @@ export function ToolboxPage({
                 }}
               >
                 <label className="field">
-                  <span>
-                    Drop an image or choose a file. Shared between tools.
+                  <span className="toolkit-upload-heading">
+                    <UploadCloud size={24} aria-hidden="true" />
+                    {file
+                      ? "Try another image"
+                      : "Drop an image or choose a file"}
+                  </span>
+                  <span className="toolkit-upload-hint">
+                    {tool === "gif"
+                      ? "Animated GIF · Frames stay local"
+                      : "PNG, JPG, WebP, AVIF, BMP or SVG · Shared between image tools"}
                   </span>
                   <input
                     aria-label="Toolbox image"
@@ -287,9 +365,20 @@ export function ToolboxPage({
               </div>
               {file && (
                 <p>
-                  {file.name}
-                  {source && ` · Input ${source.width} × ${source.height} px`}
+                  <span className="field__label">Source</span> {file.name}
+                  {source &&
+                    ` · ${source.width} × ${source.height} px · ${formatFileSize(file.size)}`}
                 </p>
+              )}
+              {!file && (
+                <div className="toolkit-start">
+                  <span aria-hidden="true">01 / 02 / 03</span>
+                  <h3>A little care for your files.</h3>
+                  <p>
+                    Choose an image to unlock the preview and settings. Your
+                    original file stays untouched.
+                  </p>
+                </div>
               )}
               {source && (
                 <div className="toolkit-workspace">
@@ -323,7 +412,9 @@ export function ToolboxPage({
                           tool === "favicon"
                             ? 1
                             : cropLocked
-                              ? options.width / options.height
+                              ? options.rotation % 180
+                                ? options.height / options.width
+                                : options.width / options.height
                               : 0
                         }
                         onChange={(rect) =>
@@ -354,6 +445,7 @@ export function ToolboxPage({
                     disabled={busy}
                   >
                     <legend>Tool settings</legend>
+                    <p className="eyebrow">Adjust. Preview. Save.</p>
                     {tool === "resize" && (
                       <ResizeTool
                         options={options}

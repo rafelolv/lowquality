@@ -1,5 +1,5 @@
 import { AlertTriangle, ImageDown, LockKeyhole, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { GifPreflight } from '../types';
 import {
   MAX_GIF_FRAMES,
@@ -34,7 +34,7 @@ export function GifScaleDialog({ pending, onCancel, onConfirm }: GifScaleDialogP
     setSelectedScale(options[0] ?? pending.requiredScale);
   }, [pending, options]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     cancelRef.current?.focus();

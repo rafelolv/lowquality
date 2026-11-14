@@ -17,20 +17,20 @@ test.describe("image compressor", () => {
     await page.goto("/");
 
     await page.getByTestId("open-compressor").click();
-    const dialog = page.getByTestId("converter-dialog");
+    const workbench = page.getByTestId("image-tools");
     await expect(
-      dialog.getByRole("heading", { name: "Squeeze it gently." }),
+      page.getByRole("heading", { name: "Compress", exact: true }),
     ).toBeVisible();
 
     // Clicking the dropzone itself must open the browser file picker.
     const fileChooserPromise = page.waitForEvent("filechooser");
-    await dialog.locator(".converter-drop").click();
+    await workbench.locator(".converter-drop").click();
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(SOURCE);
 
-    const compress = dialog.getByTestId("compressor-compress");
+    const compress = workbench.getByTestId("compressor-compress");
     await expect(compress).toBeEnabled({ timeout: 30_000 });
-    await expect(dialog.getByTestId("compressor-format-webp")).toBeEnabled();
+    await expect(workbench.getByTestId("compressor-format-webp")).toBeEnabled();
 
     const sourceSize = readFileSync(SOURCE).length;
 
@@ -43,18 +43,16 @@ test.describe("image compressor", () => {
     const webpPath = testInfo.outputPath("sample-destroyed-compressed.webp");
     await webpDownload.saveAs(webpPath);
     const webp = readFileSync(webpPath);
-    expect(Array.from(webp.subarray(0, 4))).toEqual([
-      0x52, 0x49, 0x46, 0x46,
-    ]);
+    expect(Array.from(webp.subarray(0, 4))).toEqual([0x52, 0x49, 0x46, 0x46]);
     expect(webp.length).toBeLessThan(sourceSize);
 
-    const result = dialog.getByTestId("compressor-result");
+    const result = workbench.getByTestId("compressor-result");
     await expect(result).toContainText("% smaller");
     await expect(result).toContainText("WebP");
     await expect(result).toContainText("quality");
 
     // The source stays loaded, so the same file can be compressed again.
-    await dialog.getByTestId("compressor-format-jpeg").click();
+    await workbench.getByTestId("compressor-format-jpeg").click();
     const jpgDownloadPromise = page.waitForEvent("download");
     await compress.click();
     const jpgDownload = await jpgDownloadPromise;
@@ -67,16 +65,19 @@ test.describe("image compressor", () => {
     expect(Array.from(jpg.subarray(0, 3))).toEqual([0xff, 0xd8, 0xff]);
     expect(jpg.length).toBeLessThan(sourceSize);
 
-    // Switching tabs keeps the loaded source, and the editor stays untouched.
-    await dialog.getByTestId("tool-tab-convert").click();
+    // Switching routes keeps the loaded source, and the editor stays untouched.
+    await page
+      .getByRole("navigation", { name: "Toolbox navigation" })
+      .getByRole("link", { name: "Convert", exact: true })
+      .click();
     await expect(
-      dialog.getByRole("heading", { name: "Just convert it." }),
+      page.getByRole("heading", { name: "Convert", exact: true }),
     ).toBeVisible();
-    await expect(dialog.getByTestId("converter-convert")).toBeEnabled();
+    await expect(workbench.getByTestId("converter-convert")).toBeEnabled();
     await expect(page.getByTestId("download-disaster")).toHaveCount(0);
 
-    await page.keyboard.press("Escape");
-    await expect(dialog).toHaveCount(0);
+    await page.goto("/#toolbox");
+    await expect(workbench).toHaveCount(0);
   });
 
   test("honors a custom target and refuses impossible sizes", async ({
@@ -86,26 +87,26 @@ test.describe("image compressor", () => {
     await page.goto("/");
 
     await page.getByTestId("open-compressor").click();
-    const dialog = page.getByTestId("converter-dialog");
+    const workbench = page.getByTestId("image-tools");
     const chooserPromise = page.waitForEvent("filechooser");
-    await dialog.locator(".converter-drop").click();
+    await workbench.locator(".converter-drop").click();
     const chooser = await chooserPromise;
     await chooser.setFiles(SOURCE);
 
-    const compress = dialog.getByTestId("compressor-compress");
+    const compress = workbench.getByTestId("compressor-compress");
     await expect(compress).toBeEnabled({ timeout: 30_000 });
 
-    const custom = dialog.getByTestId("compressor-custom-target");
+    const custom = workbench.getByTestId("compressor-custom-target");
     await custom.fill("999");
     await expect(compress).toBeDisabled();
-    await expect(dialog.getByTestId("compressor-custom-hint")).toContainText(
+    await expect(workbench.getByTestId("compressor-custom-hint")).toContainText(
       "below the original",
     );
 
     const targetBytes = 12 * 1024;
     await custom.fill(String(targetBytes / (1024 * 1024)));
     await expect(compress).toBeEnabled();
-    await expect(dialog.getByTestId("compressor-custom-hint")).toContainText(
+    await expect(workbench.getByTestId("compressor-custom-hint")).toContainText(
       "12 KB target",
     );
 
@@ -116,10 +117,12 @@ test.describe("image compressor", () => {
     await download.saveAs(outputPath);
     const output = readFileSync(outputPath);
     expect(output.length).toBeLessThanOrEqual(targetBytes);
-    await expect(dialog.getByTestId("compressor-result")).toContainText("tries");
+    await expect(workbench.getByTestId("compressor-result")).toContainText(
+      "tries",
+    );
 
-    await page.keyboard.press("Escape");
-    await expect(dialog).toHaveCount(0);
+    await page.goto("/#toolbox");
+    await expect(workbench).toHaveCount(0);
   });
 
   test("applies a resolution cap and never drops below the quality floor", async ({
@@ -158,28 +161,30 @@ test.describe("image compressor", () => {
     });
 
     await page.getByTestId("open-compressor").click();
-    const dialog = page.getByTestId("converter-dialog");
-    await dialog.getByTestId("converter-file-input").setInputFiles({
+    const workbench = page.getByTestId("image-tools");
+    await workbench.getByTestId("converter-file-input").setInputFiles({
       name: "gradient-source.png",
       mimeType: "image/png",
       buffer: Buffer.from(dataUrl.split(",")[1] ?? "", "base64"),
     });
 
-    const compress = dialog.getByTestId("compressor-compress");
+    const compress = workbench.getByTestId("compressor-compress");
     await expect(compress).toBeEnabled({ timeout: 30_000 });
 
-    await dialog.locator(".converter-advanced summary").click();
-    await dialog.getByTestId("compressor-dimension-1280").click();
+    await workbench.locator(".converter-advanced summary").click();
+    await workbench.getByTestId("compressor-dimension-1280").click();
     const targetBytes = 60 * 1024;
-    await dialog
+    await workbench
       .getByTestId("compressor-custom-target")
       .fill(String(targetBytes / (1024 * 1024)));
-    await dialog.getByTestId("compressor-quality-floor").evaluate((element) => {
-      const input = element as HTMLInputElement;
-      input.value = "60";
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    });
+    await workbench
+      .getByTestId("compressor-quality-floor")
+      .evaluate((element) => {
+        const input = element as HTMLInputElement;
+        input.value = "60";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      });
 
     const downloadPromise = page.waitForEvent("download");
     await compress.click();
@@ -188,13 +193,13 @@ test.describe("image compressor", () => {
     await download.saveAs(outputPath);
     expect(readFileSync(outputPath).length).toBeLessThanOrEqual(targetBytes);
 
-    const result = dialog.getByTestId("compressor-result");
+    const result = workbench.getByTestId("compressor-result");
     await expect(result).toContainText("1,280 × 960");
     const resultText = await result.innerText();
     const quality = Number(resultText.match(/quality\s+(\d+)%/)?.[1] ?? 0);
     expect(quality).toBeGreaterThanOrEqual(60);
 
-    await page.keyboard.press("Escape");
-    await expect(dialog).toHaveCount(0);
+    await page.goto("/#toolbox");
+    await expect(workbench).toHaveCount(0);
   });
 });

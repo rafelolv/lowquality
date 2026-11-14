@@ -87,6 +87,7 @@ export interface VideoGifPlan {
   frameCount: number;
   /** Delay per frame in milliseconds, already adjusted for playback speed. */
   delay: number;
+  delays: number[];
   /** Approximate playback duration of the encoded GIF, in seconds. */
   duration: number;
   start: number;
@@ -112,6 +113,9 @@ export function planVideoGif(input: VideoGifPlanInput): VideoGifPlan {
   if (input.sourceWidth < 1 || input.sourceHeight < 1) {
     throw new Error("This browser did not report usable video dimensions.");
   }
+  if (input.start < 0) {
+    throw new Error("Clip start must be zero or greater.");
+  }
   if (input.end <= input.start) {
     throw new Error("Set an end point after the start point.");
   }
@@ -122,7 +126,7 @@ export function planVideoGif(input: VideoGifPlanInput): VideoGifPlan {
     throw new Error("Playback speed must be greater than zero.");
   }
   const clipSeconds = input.end - input.start;
-  if (clipSeconds < 0.1) {
+  if (clipSeconds + 1e-6 < 0.1) {
     throw new Error("Clips must be at least 0.1 seconds long.");
   }
   if (clipSeconds > MAX_VIDEO_GIF_SECONDS + 0.001) {
@@ -161,12 +165,21 @@ export function planVideoGif(input: VideoGifPlanInput): VideoGifPlan {
     Math.round(1000 / input.fps / input.speed / 10) * 10,
   );
 
+  const frameDuration = Math.max(20, 1000 / input.fps / input.speed);
+  const delays = Array.from(
+    { length: frameCount },
+    (_, index) =>
+      (Math.round(((index + 1) * frameDuration) / 10) -
+        Math.round((index * frameDuration) / 10)) *
+      10,
+  );
   return {
     width,
     height,
     frameCount,
     delay,
-    duration: (frameCount * delay) / 1000,
+    delays,
+    duration: delays.reduce((total, value) => total + value, 0) / 1000,
     start: input.start,
     fps: input.fps,
     colors: Math.max(2, Math.min(256, Math.round(input.colors))),

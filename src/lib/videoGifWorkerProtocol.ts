@@ -3,6 +3,7 @@ export interface VideoGifStart {
   width: number;
   height: number;
   delay: number;
+  delays: number[];
   repeat: number;
   frameCount: number;
   reverse: boolean;

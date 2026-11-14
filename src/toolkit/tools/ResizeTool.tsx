@@ -95,7 +95,9 @@ export function ResizeTool({
                   },
                   source.width,
                   source.height,
-                  options.width / options.height,
+                  options.rotation % 180
+                    ? options.height / options.width
+                    : options.width / options.height,
                 ),
               });
           }}
@@ -150,13 +152,14 @@ export function ResizeTool({
       <div className="toolkit-actions">
         <button
           className="button button--ghost"
-          onClick={() =>
+          onClick={() => {
+            setPreset("Custom");
             change({
               rotation: (options.rotation + 90) % 360,
               width: options.height,
               height: options.width,
-            })
-          }
+            });
+          }}
         >
           Rotate 90° ({options.rotation}°)
         </button>
@@ -176,7 +179,8 @@ export function ResizeTool({
         </button>
         <button
           className="button button--ghost"
-          onClick={() =>
+          onClick={() => {
+            setPreset("Custom");
             change({
               crop: undefined,
               rotation: 0,
@@ -184,8 +188,8 @@ export function ResizeTool({
               flipY: false,
               width: source.width,
               height: source.height,
-            })
-          }
+            });
+          }}
         >
           Reset crop
         </button>

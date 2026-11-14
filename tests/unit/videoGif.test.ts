@@ -51,7 +51,7 @@ describe("video GIF planning", () => {
       height: 270,
       frameCount: 120,
       delay: 80,
-      duration: 9.6,
+      duration: 10,
       colors: 128,
     });
   });
@@ -128,4 +128,38 @@ describe("video GIF planning", () => {
     );
     expect(buildVideoGifName(".mp4")).toBe("video-lowquality.gif");
   });
+});
+
+it("distributes centisecond rounding without changing playback speed", () => {
+  for (const fps of [12, 15, 24, 30]) {
+    const plan = planVideoGif({
+      start: 0,
+      end: 2,
+      fps,
+      colors: 128,
+      speed: 1,
+      width: 160,
+      sourceWidth: 160,
+      sourceHeight: 90,
+    });
+    expect(plan.duration).toBe(2);
+    expect(plan.delays).toHaveLength(plan.frameCount);
+    expect(plan.delays.every((delay) => delay >= 20 && delay % 10 === 0)).toBe(
+      true,
+    );
+  }
+});
+it("accepts tenth-second trims despite floating point subtraction, rejects negative starts", () => {
+  const input = {
+    start: 60,
+    end: 60.1,
+    fps: 10,
+    colors: 128,
+    speed: 1,
+    width: 160,
+    sourceWidth: 160,
+    sourceHeight: 90,
+  };
+  expect(planVideoGif(input).frameCount).toBe(1);
+  expect(() => planVideoGif({ ...input, start: -1, end: 1 })).toThrow(/zero/);
 });

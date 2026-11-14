@@ -14,6 +14,7 @@ interface EncoderState {
   width: number;
   height: number;
   delay: number;
+  delays: number[];
   repeat: number;
   frameCount: number;
   reverse: boolean;
@@ -43,7 +44,7 @@ function encodeFrame(pixels: Uint8ClampedArray) {
     palette: prepared.palette,
     transparent: prepared.transparent,
     transparentIndex: prepared.transparentIndex,
-    delay: state.delay,
+    delay: state.delays[state.encoded] ?? state.delay,
     repeat: state.repeat,
     dispose: prepared.transparent ? 2 : 1,
   });
@@ -57,6 +58,7 @@ function start(message: VideoGifStart) {
     width: message.width,
     height: message.height,
     delay: message.delay,
+    delays: message.delays,
     repeat: message.repeat,
     frameCount: message.frameCount,
     reverse: message.reverse,

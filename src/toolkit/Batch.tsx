@@ -52,42 +52,74 @@ export function Batch() {
       })),
     ]);
   }
+  function changeOptions(patch: Partial<Options>) {
+    setOptions((value) => ({
+      ...value,
+      ...patch,
+      ...(patch.format === "png" ? { targetBytes: 0 } : {}),
+    }));
+    setEntries((list) =>
+      list.map((item) => ({
+        ...item,
+        result: undefined,
+        progress: 0,
+        status: "Queued",
+      })),
+    );
+  }
+  function cancel() {
+    token.current++;
+    current.current?.cancel();
+    current.current = null;
+    if (active.current !== null)
+      update(active.current, { status: "Cancelled", progress: 0 });
+    active.current = null;
+    setBusy(false);
+  }
   async function run() {
+    if (busy) return;
     setBusy(true);
     setError("");
     const version = ++token.current;
     for (const item of entriesRef.current.filter((item) => !item.result)) {
-      if (version !== token.current) break;
+      if (version !== token.current || !mounted.current) break;
       if (!entriesRef.current.some((entry) => entry.id === item.id)) continue;
       active.current = item.id;
       update(item.id, { status: "Processing", progress: 1 });
-      const job = startJob({ file: item.file, options }, (progress) =>
-        update(item.id, { progress }),
-      );
+      const job = startJob({ file: item.file, options }, (progress) => {
+        if (version === token.current) update(item.id, { progress });
+      });
       current.current = job;
       try {
         const result = await job.promise;
-        update(item.id, { result, status: "Done", progress: 100 });
+        if (version === token.current)
+          update(item.id, { result, status: "Done", progress: 100 });
       } catch (e) {
-        update(item.id, {
-          status:
-            e instanceof DOMException && e.name === "AbortError"
-              ? "Cancelled"
-              : e instanceof Error
-                ? e.message
-                : "Failed",
-          progress: 0,
-        });
+        if (version === token.current)
+          update(item.id, {
+            status:
+              e instanceof DOMException && e.name === "AbortError"
+                ? "Cancelled"
+                : e instanceof Error
+                  ? e.message
+                  : "Failed",
+            progress: 0,
+          });
       } finally {
         if (current.current === job) current.current = null;
       }
     }
-    active.current = null;
-    if (mounted.current) setBusy(false);
+    if (version === token.current && mounted.current) {
+      active.current = null;
+      setBusy(false);
+    }
   }
   async function downloadAll() {
+    if (busy) return;
     setBusy(true);
     setError("");
+    const version = ++token.current;
+    const route = window.location.hash;
     const job = startJob({
       options,
       files: entries.flatMap((item) =>
@@ -97,13 +129,22 @@ export function Batch() {
     current.current = job;
     try {
       const result = await job.promise;
-      downloadBlob(result.blob, result.name);
+      if (
+        mounted.current &&
+        version === token.current &&
+        route === window.location.hash
+      )
+        downloadBlob(result.blob, result.name);
     } catch (e) {
-      if (mounted.current)
+      if (
+        mounted.current &&
+        version === token.current &&
+        !(e instanceof DOMException && e.name === "AbortError")
+      )
         setError(e instanceof Error ? e.message : "ZIP failed.");
     } finally {
-      current.current = null;
-      if (mounted.current) setBusy(false);
+      if (current.current === job) current.current = null;
+      if (mounted.current && version === token.current) setBusy(false);
     }
   }
   return (
@@ -134,49 +175,48 @@ export function Batch() {
       </div>
       <fieldset disabled={busy} className="panel toolkit-box toolkit-stack">
         <legend>Shared settings</legend>
-        <OutputControls
-          options={options}
-          change={(patch) => setOptions((o) => ({ ...o, ...patch }))}
-        />
+        <OutputControls options={options} change={changeOptions} />
         <div className="toolkit-fields">
           <NumberField
             label="Resize width (0 = original)"
             value={options.width}
             min={0}
-            onChange={(width) => setOptions((o) => ({ ...o, width }))}
+            onChange={(width) => changeOptions({ width })}
           />
           <NumberField
             label="Resize height (0 = original)"
             value={options.height}
             min={0}
-            onChange={(height) => setOptions((o) => ({ ...o, height }))}
+            onChange={(height) => changeOptions({ height })}
           />
           <NumberField
             label="Resolution cap (0 = original)"
             value={options.maxDimension}
             min={0}
-            onChange={(maxDimension) =>
-              setOptions((o) => ({ ...o, maxDimension }))
-            }
+            onChange={(maxDimension) => changeOptions({ maxDimension })}
           />
-          <NumberField
-            label="Target KB (0 = off)"
-            min={0}
-            max={30720}
-            value={options.targetBytes / 1024}
-            onChange={(value) =>
-              setOptions((o) => ({ ...o, targetBytes: value * 1024 }))
-            }
-          />
-          <NumberField
-            label="Quality floor (%)"
-            min={30}
-            max={95}
-            value={options.qualityFloor * 100}
-            onChange={(value) =>
-              setOptions((o) => ({ ...o, qualityFloor: value / 100 }))
-            }
-          />
+          {options.format !== "png" && (
+            <>
+              <NumberField
+                label="Target KB (0 = off)"
+                min={0}
+                max={30720}
+                value={options.targetBytes / 1024}
+                onChange={(value) =>
+                  changeOptions({ targetBytes: value * 1024 })
+                }
+              />
+              <NumberField
+                label="Quality floor (%)"
+                min={30}
+                max={95}
+                value={options.qualityFloor * 100}
+                onChange={(value) =>
+                  changeOptions({ qualityFloor: value / 100 })
+                }
+              />
+            </>
+          )}
         </div>
         <p>
           Target compression: JPG/WebP only. Resolution can shrink when the
@@ -194,10 +234,7 @@ export function Batch() {
         <button
           className="button button--ghost"
           disabled={!busy}
-          onClick={() => {
-            token.current++;
-            current.current?.cancel();
-          }}
+          onClick={cancel}
         >
           Cancel queue
         </button>

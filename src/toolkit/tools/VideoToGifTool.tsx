@@ -131,6 +131,10 @@ export function VideoToGifTool() {
   }, [url, settings?.end]);
 
   const selectFile = useCallback((next: File) => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    previewClipRef.current = false;
+    videoRef.current?.pause();
     const format = detectVideoFormat(next);
     setResult(null);
     setMeta(null);
@@ -185,7 +189,7 @@ export function VideoToGifTool() {
       width < 1 ||
       height < 1 ||
       !Number.isFinite(duration) ||
-      duration <= 0.05
+      duration + 1e-6 < 0.1
     ) {
       setLoading(false);
       setReady(false);
@@ -227,15 +231,22 @@ export function VideoToGifTool() {
   }
 
   const change = (patch: Partial<VideoSettings>) => {
+    previewClipRef.current = false;
+    videoRef.current?.pause();
     setSettings((current) => (current ? { ...current, ...patch } : current));
     setResult(null);
   };
 
   const changeStart = (value: number) => {
-    if (!settings) return;
-    const maximum = Math.max(0, settings.end - 0.1);
+    if (!settings || !meta) return;
+    const maximum = Math.max(0, meta.duration - 0.1);
     const start = Math.min(Math.max(0, value), maximum);
-    change({ start });
+    const end = Math.min(
+      meta.duration,
+      start + MAX_VIDEO_GIF_SECONDS,
+      Math.max(settings.end, start + 0.1),
+    );
+    change({ start, end });
     if (ready && videoRef.current) {
       try {
         videoRef.current.currentTime = start;
@@ -298,6 +309,7 @@ export function VideoToGifTool() {
     const video = videoRef.current;
     if (!video || !settings) return;
     previewClipRef.current = true;
+    video.playbackRate = settings.speed;
     video.currentTime = settings.start;
     void video.play().catch(() => {
       previewClipRef.current = false;
@@ -347,6 +359,7 @@ export function VideoToGifTool() {
     setError("");
     setProgress(0);
     setStage("Warming up the frame grabber");
+    videoRef.current.pause();
     try {
       const blob = await convertVideoToGif(videoRef.current, planned.plan, {
         start: settings.start,
@@ -356,11 +369,13 @@ export function VideoToGifTool() {
         loop: settings.loop,
         signal: controller.signal,
         onProgress: (value, nextStage) => {
+          if (controller.signal.aborted || abortRef.current !== controller)
+            return;
           setProgress(value);
           setStage(nextStage);
         },
       });
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || abortRef.current !== controller) return;
       setResult({
         blob,
         name: buildVideoGifName(file.name),
@@ -369,6 +384,7 @@ export function VideoToGifTool() {
       setProgress(100);
       setStage("GIF ready");
     } catch (caught) {
+      if (controller.signal.aborted || abortRef.current !== controller) return;
       if (caught instanceof DOMException && caught.name === "AbortError")
         return;
       setError(
@@ -379,8 +395,10 @@ export function VideoToGifTool() {
       setProgress(0);
       setStage("");
     } finally {
-      if (abortRef.current === controller) abortRef.current = null;
-      setBusy(false);
+      if (abortRef.current === controller) {
+        abortRef.current = null;
+        setBusy(false);
+      }
     }
   };
 
@@ -462,7 +480,7 @@ export function VideoToGifTool() {
                   ref={videoRef}
                   className="video-player"
                   src={url}
-                  controls
+                  controls={!busy}
                   playsInline
                   preload="auto"
                   aria-label="Video preview"
@@ -489,7 +507,7 @@ export function VideoToGifTool() {
                   disabled={!ready || busy}
                 >
                   <Play size={14} aria-hidden="true" />
-                  Preview clip
+                  Preview source clip
                 </button>
                 <button
                   type="button"

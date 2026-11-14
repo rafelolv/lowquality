@@ -65,22 +65,35 @@ function waitForLoadedData(
   });
 }
 
-function waitForPresentedFrame(video: HTMLVideoElement): Promise<void> {
-  if (typeof video.requestVideoFrameCallback !== "function") {
-    return new Promise((resolve) => {
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-    });
-  }
-  return new Promise((resolve) => {
+function waitForPresentedFrame(
+  video: HTMLVideoElement,
+  signal: AbortSignal,
+): Promise<void> {
+  if (signal.aborted) return Promise.reject(cancelled());
+  return new Promise((resolve, reject) => {
+    let frame: number | undefined;
+    let animation: number | undefined;
     let settled = false;
     const finish = () => {
       if (settled) return;
       settled = true;
       window.clearTimeout(timer);
-      resolve();
+      if (frame !== undefined) video.cancelVideoFrameCallback(frame);
+      if (animation !== undefined) cancelAnimationFrame(animation);
+      signal.removeEventListener("abort", onAbort);
+      if (signal.aborted) reject(cancelled());
+      else resolve();
     };
+    const onAbort = () => finish();
     const timer = window.setTimeout(finish, 250);
-    video.requestVideoFrameCallback(finish);
+    signal.addEventListener("abort", onAbort, { once: true });
+    if (typeof video.requestVideoFrameCallback === "function") {
+      frame = video.requestVideoFrameCallback(finish);
+    } else {
+      animation = requestAnimationFrame(() => {
+        animation = requestAnimationFrame(finish);
+      });
+    }
   });
 }
 
@@ -101,7 +114,8 @@ async function seekVideo(
   // Register the frame callback before changing currentTime. A paused video
   // only presents a new frame after the seek, so registering afterwards can
   // miss the callback and stall until the timeout.
-  const presented = waitForPresentedFrame(video);
+  const presented = waitForPresentedFrame(video, signal);
+  void presented.catch(() => {});
   await new Promise<void>((resolve, reject) => {
     const cleanup = () => {
       video.removeEventListener("seeked", onSeeked);
@@ -145,103 +159,110 @@ export async function convertVideoToGif(
 ): Promise<Blob> {
   const { signal } = options;
   if (signal.aborted) throw cancelled();
-  await waitForLoadedData(video, signal);
-  if (signal.aborted) throw cancelled();
+  const capture = document.createElement("video");
+  capture.muted = true;
+  capture.playsInline = true;
+  capture.preload = "auto";
+  capture.src = video.currentSrc || video.src;
+  let worker: Worker | undefined;
+  try {
+    await waitForLoadedData(capture, signal);
+    if (signal.aborted) throw cancelled();
+    const context = ensureCanvas(plan.width, plan.height);
+    worker = new Worker(
+      new URL("../workers/videoGif.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    const encoder = worker;
+    let resolveDone: (bytes: ArrayBuffer) => void = () => {};
+    let rejectDone: (error: Error) => void = () => {};
+    const done = new Promise<ArrayBuffer>((resolve, reject) => {
+      resolveDone = resolve;
+      rejectDone = reject;
+    });
+    // The capture loop can fail before it awaits `done`; keep that rejection
+    // handled while still surfacing it if the conversion reaches the await.
+    void done.catch(() => {});
 
-  const context = ensureCanvas(plan.width, plan.height);
-  video.pause();
+    let encoded = 0;
+    let captureComplete = false;
+    const report = (progress: number, stage: string) => {
+      options.onProgress?.(Math.max(0, Math.min(100, progress)), stage);
+    };
+    const onAbort = () => {
+      encoder.terminate();
+      rejectDone(cancelled());
+    };
 
-  const worker = new Worker(
-    new URL("../workers/videoGif.worker.ts", import.meta.url),
-    { type: "module" },
-  );
-  let resolveDone: (bytes: ArrayBuffer) => void = () => {};
-  let rejectDone: (error: Error) => void = () => {};
-  const done = new Promise<ArrayBuffer>((resolve, reject) => {
-    resolveDone = resolve;
-    rejectDone = reject;
-  });
-  // The capture loop can fail before it awaits `done`; keep that rejection
-  // handled while still surfacing it if the conversion reaches the await.
-  void done.catch(() => {});
+    encoder.onmessage = (event: MessageEvent<VideoGifEvent>) => {
+      const message = event.data;
+      if (message.type === "progress") {
+        encoded = message.encoded;
+        if (captureComplete) {
+          report(
+            80 + (encoded / Math.max(1, plan.frameCount)) * 18,
+            `Encoding GIF frame ${encoded} of ${plan.frameCount}`,
+          );
+        }
+        return;
+      }
+      if (message.type === "done") {
+        resolveDone(message.bytes);
+        return;
+      }
+      rejectDone(new Error(message.message));
+    };
+    encoder.onerror = () => {
+      rejectDone(new Error("The local video encoder stopped unexpectedly."));
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
 
-  let encoded = 0;
-  let captureComplete = false;
-  const report = (progress: number, stage: string) => {
-    options.onProgress?.(Math.max(0, Math.min(100, progress)), stage);
-  };
-  const onAbort = () => {
-    worker.terminate();
-    rejectDone(cancelled());
-  };
+    try {
+      const start: VideoGifCommand = {
+        type: "start",
+        width: plan.width,
+        height: plan.height,
+        delay: plan.delay,
+        delays: plan.delays,
+        repeat: options.loop ? 0 : -1,
+        frameCount: plan.frameCount,
+        reverse: options.reverse,
+        colors: plan.colors,
+      };
+      encoder.postMessage(start);
 
-  worker.onmessage = (event: MessageEvent<VideoGifEvent>) => {
-    const message = event.data;
-    if (message.type === "progress") {
-      encoded = message.encoded;
-      if (captureComplete) {
+      report(0, "Warming up the frame grabber");
+      for (let index = 0; index < plan.frameCount; index++) {
+        if (signal.aborted) throw cancelled();
+        const time = plan.start + index / plan.fps;
+        await Promise.race([seekVideo(capture, time, signal), done]);
+        if (signal.aborted) throw cancelled();
+        context.drawImage(capture, 0, 0, plan.width, plan.height);
+        const pixels = context.getImageData(0, 0, plan.width, plan.height).data;
+        const frame: VideoGifCommand = {
+          type: "frame",
+          pixels: pixels.buffer,
+        };
+        encoder.postMessage(frame, [pixels.buffer]);
         report(
-          80 + (encoded / Math.max(1, plan.frameCount)) * 18,
-          `Encoding GIF frame ${encoded} of ${plan.frameCount}`,
+          ((index + 1) / plan.frameCount) * 80,
+          `Capturing frame ${index + 1} of ${plan.frameCount}`,
         );
       }
-      return;
-    }
-    if (message.type === "done") {
-      resolveDone(message.bytes);
-      return;
-    }
-    rejectDone(new Error(message.message));
-  };
-  worker.onerror = () => {
-    rejectDone(new Error("The local video encoder stopped unexpectedly."));
-  };
-  signal.addEventListener("abort", onAbort, { once: true });
 
-  try {
-    const start: VideoGifCommand = {
-      type: "start",
-      width: plan.width,
-      height: plan.height,
-      delay: plan.delay,
-      repeat: options.loop ? 0 : -1,
-      frameCount: plan.frameCount,
-      reverse: options.reverse,
-      colors: plan.colors,
-    };
-    worker.postMessage(start);
-
-    report(0, "Warming up the frame grabber");
-    for (let index = 0; index < plan.frameCount; index++) {
-      if (signal.aborted) throw cancelled();
-      const time = plan.start + index / options.fps;
-      await seekVideo(video, time, signal);
-      context.drawImage(video, 0, 0, plan.width, plan.height);
-      const pixels = context.getImageData(0, 0, plan.width, plan.height).data;
-      const frame: VideoGifCommand = {
-        type: "frame",
-        pixels: pixels.buffer,
-      };
-      worker.postMessage(frame, [pixels.buffer]);
-      report(
-        ((index + 1) / plan.frameCount) * 80,
-        `Capturing frame ${index + 1} of ${plan.frameCount}`,
-      );
+      captureComplete = true;
+      report(80, "Encoding the final palette");
+      encoder.postMessage({ type: "finish" } satisfies VideoGifCommand);
+      const bytes = await done;
+      report(100, "GIF ready");
+      return new Blob([new Uint8Array(bytes)], { type: "image/gif" });
+    } finally {
+      signal.removeEventListener("abort", onAbort);
+      encoder.terminate();
     }
-
-    captureComplete = true;
-    report(80, "Encoding the final palette");
-    worker.postMessage({ type: "finish" } satisfies VideoGifCommand);
-    const bytes = await done;
-    report(100, "GIF ready");
-    return new Blob([new Uint8Array(bytes)], { type: "image/gif" });
   } finally {
-    signal.removeEventListener("abort", onAbort);
-    worker.terminate();
-    try {
-      video.currentTime = plan.start;
-    } catch {
-      // The preview can keep its current frame if the element is gone.
-    }
+    worker?.terminate();
+    capture.removeAttribute("src");
+    capture.load();
   }
 }

@@ -34,6 +34,10 @@ export function startJob(request: Request, progress?: (value: number) => void) {
       try {
         if (request.file && request.options.tool !== "gif") {
           const format = validateStaticFile(request.file);
+          if (format.animated)
+            throw new Error(
+              "GIF files belong in GIF Kit. Choose a still image for this tool.",
+            );
           if (format.mime === "image/svg+xml") {
             // Browsers cannot decode SVG blobs in workers. Use the existing local
             // sanitizer and browser SVG decoder; transform and encode in worker.

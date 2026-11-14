@@ -6,6 +6,8 @@ test("all Toolbox tools use the shared raised work surface", async ({
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const [route, title] of [
+    ["convert", "Convert"],
+    ["compress", "Compress"],
     ["resize", "Resize & Crop"],
     ["batch", "Batch"],
     ["metadata", "Metadata"],
@@ -46,21 +48,13 @@ test("Convert and Compress are purple feature cards in the Toolbox grid", async 
     await expect(card).toHaveClass(/tool-card/);
   }
 
-  await page.getByTestId("toolbox-convert-card").click();
-  await expect(page.getByTestId("converter-dialog")).toBeVisible();
-  await expect(page.getByTestId("converter-dialog")).toHaveClass(
-    /converter-dialog--toolbox/,
-  );
-  await page.getByTestId("tool-tab-compress").click();
-  await expect(page.getByTestId("converter-dialog")).toHaveClass(
-    /converter-dialog--toolbox/,
-  );
-  await page.keyboard.press("Escape");
-  await page.getByTestId("toolbox-compress-card").click();
-  await expect(page.getByTestId("converter-dialog")).toBeVisible();
-  await expect(page.getByTestId("converter-dialog")).toHaveClass(
-    /converter-dialog--toolbox/,
-  );
+  for (const tool of ["convert", "compress"]) {
+    await page.getByTestId(`toolbox-${tool}-card`).click();
+    await expect(page).toHaveURL(new RegExp(`#toolbox/${tool}$`));
+    await expect(page.getByTestId("image-tools")).toBeVisible();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.locator(".toolkit-back").click();
+  }
 });
 
 async function upload(
@@ -378,13 +372,14 @@ test("Video to GIF trims, samples, and exports local motion", async ({
 
 test("SVG stays local; exports JPG/WebP with real dimensions; mobile tools fit", async ({
   page,
+  baseURL,
 }) => {
   const remote: string[] = [];
   const errors = collectErrors(page);
   page.on("request", (request) => {
     if (
       /^https?:/.test(request.url()) &&
-      !request.url().startsWith("http://127.0.0.1:4173/")
+      new URL(request.url()).origin !== new URL(baseURL!).origin
     )
       remote.push(request.url());
   });

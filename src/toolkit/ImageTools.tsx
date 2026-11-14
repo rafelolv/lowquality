@@ -1,15 +1,11 @@
 import {
-  ArrowLeftRight,
   Check,
   Download,
   FileImage,
-  Heart,
   Loader2,
   LockKeyhole,
-  Minimize2,
   RefreshCw,
   UploadCloud,
-  X,
 } from "lucide-react";
 import {
   useCallback,
@@ -53,13 +49,12 @@ type ConvertFormat = Exclude<ExportFormat, "gif">;
 
 type RangeStyle = CSSProperties & { "--range-progress": string };
 
-interface ConverterDialogProps {
-  initialMode?: ToolMode;
-  onClose: () => void;
-  toolbox?: boolean;
+interface ImageToolsProps {
+  mode: ToolMode;
 }
 
 interface SourceState {
+  preview: Blob;
   file: File;
   format: string;
   width: number;
@@ -106,21 +101,15 @@ function formatLabel(format: ConvertFormat): string {
   return FORMATS.find((item) => item.id === format)?.label ?? format;
 }
 
-export function ConverterDialog({
-  initialMode = "convert",
-  onClose,
-  toolbox = false,
-}: ConverterDialogProps) {
+export function ImageTools({ mode }: ImageToolsProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
   const clientRef = useRef<DestroyWorkerClient | null>(null);
   const initJobRef = useRef<JobHandle<void> | null>(null);
   const exportJobRef = useRef<JobHandle<Blob> | null>(null);
   const compressJobRef = useRef<JobHandle<CompressStaticResult> | null>(null);
   const tokenRef = useRef(0);
+  const operationRef = useRef(0);
 
-  const [mode, setMode] = useState<ToolMode>(initialMode);
   const [source, setSource] = useState<SourceState | null>(null);
   const [format, setFormat] = useState<ConvertFormat>("png");
   const [compressFormat, setCompressFormat] = useState<CompressFormat>("webp");
@@ -140,7 +129,9 @@ export function ConverterDialog({
   const [dragActive, setDragActive] = useState(false);
 
   const targets = source ? compressionTargets(source.file.size) : [];
-  const dimensions = source ? dimensionOptions(source.width, source.height) : [];
+  const dimensions = source
+    ? dimensionOptions(source.width, source.height)
+    : [];
   const customTargetBytes = source
     ? parseTargetMb(customTarget, source.file.size)
     : null;
@@ -152,6 +143,7 @@ export function ConverterDialog({
 
   const disposeWorker = useCallback(() => {
     tokenRef.current += 1;
+    operationRef.current += 1;
     initJobRef.current?.cancel();
     initJobRef.current = null;
     exportJobRef.current?.cancel();
@@ -162,60 +154,42 @@ export function ConverterDialog({
     clientRef.current = null;
   }, []);
 
-  const handleClose = useCallback(() => {
-    disposeWorker();
-    onClose();
-  }, [disposeWorker, onClose]);
+  useEffect(() => () => disposeWorker(), [disposeWorker]);
 
+  // Keep decoded source between these routes; cancel only the outgoing job.
   useEffect(() => {
-    return () => {
-      disposeWorker();
-    };
-  }, [disposeWorker]);
+    operationRef.current += 1;
+    exportJobRef.current?.cancel();
+    compressJobRef.current?.cancel();
+    setBusy((current) => (current === "loading" ? current : null));
+    setResult(null);
+    setCompressed(null);
+    setError(null);
+  }, [mode]);
 
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [resultUrl, setResultUrl] = useState("");
+  const [showOriginal, setShowOriginal] = useState(false);
+  const outputBlob = result?.blob ?? compressed?.blob;
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    const previousFocus =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        handleClose();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const dialog = dialogRef.current;
-      if (!dialog) return;
-      const focusable = Array.from(
-        dialog.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((element) => element.offsetParent !== null);
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (!first || !last) return;
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-      previousFocus?.focus();
-    };
-  }, [handleClose]);
+    if (!source) {
+      setSourceUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(source.preview);
+    setSourceUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [source]);
+  useEffect(() => {
+    setShowOriginal(false);
+    if (!outputBlob) {
+      setResultUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(outputBlob);
+    setResultUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [outputBlob]);
 
   const loadSource = useCallback(
     async (file: File) => {
@@ -251,7 +225,28 @@ export function ConverterDialog({
         }
 
         const image = decoded;
+        // Preview decoded pixels so SVG references never enter an <img>.
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Could not prepare image preview.");
+        context.drawImage(image.bitmap, 0, 0);
+        const preview = await new Promise<Blob>((resolve, reject) =>
+          canvas.toBlob(
+            (blob) =>
+              blob
+                ? resolve(blob)
+                : reject(new Error("Could not prepare image preview.")),
+            "image/png",
+          ),
+        );
+        if (token !== tokenRef.current) {
+          image.bitmap.close();
+          return;
+        }
         setSource({
+          preview,
           file,
           format: info.format,
           width: image.width,
@@ -310,6 +305,8 @@ export function ConverterDialog({
     if (!source || !ready || busy || !clientRef.current) return;
     const client = clientRef.current;
     const token = tokenRef.current;
+    const operation = ++operationRef.current;
+    const route = window.location.hash;
     setBusy("converting");
     setError(null);
     setResult(null);
@@ -326,14 +323,24 @@ export function ConverterDialog({
           format,
         },
         (update: JobProgress) => {
-          if (token !== tokenRef.current) return;
+          if (
+            token !== tokenRef.current ||
+            operation !== operationRef.current ||
+            window.location.hash !== route
+          )
+            return;
           setProgress(update.progress);
           setStage(update.stage);
         },
       );
       exportJobRef.current = job;
       const blob = await job.promise;
-      if (token !== tokenRef.current) return;
+      if (
+        token !== tokenRef.current ||
+        operation !== operationRef.current ||
+        window.location.hash !== route
+      )
+        return;
 
       const name = buildConvertedName(source.file.name, format);
       downloadBlob(blob, name);
@@ -342,7 +349,12 @@ export function ConverterDialog({
       setProgress(100);
       setStage("Converted");
     } catch (caught) {
-      if (token !== tokenRef.current || caught instanceof WorkerJobCancelled) {
+      if (
+        token !== tokenRef.current ||
+        operation !== operationRef.current ||
+        window.location.hash !== route ||
+        caught instanceof WorkerJobCancelled
+      ) {
         return;
       }
       setBusy(null);
@@ -350,7 +362,12 @@ export function ConverterDialog({
       setStage("");
       setError(errorMessage(caught));
     } finally {
-      if (token === tokenRef.current) exportJobRef.current = null;
+      if (
+        token === tokenRef.current &&
+        operation === operationRef.current &&
+        window.location.hash === route
+      )
+        exportJobRef.current = null;
     }
   }, [busy, format, ready, source]);
 
@@ -367,6 +384,8 @@ export function ConverterDialog({
     }
     const client = clientRef.current;
     const token = tokenRef.current;
+    const operation = ++operationRef.current;
+    const route = window.location.hash;
     setBusy("compressing");
     setError(null);
     setResult(null);
@@ -383,14 +402,24 @@ export function ConverterDialog({
           qualityFloor,
         },
         (update: JobProgress) => {
-          if (token !== tokenRef.current) return;
+          if (
+            token !== tokenRef.current ||
+            operation !== operationRef.current ||
+            window.location.hash !== route
+          )
+            return;
           setProgress(update.progress);
           setStage(update.stage);
         },
       );
       compressJobRef.current = job;
       const output = await job.promise;
-      if (token !== tokenRef.current) return;
+      if (
+        token !== tokenRef.current ||
+        operation !== operationRef.current ||
+        window.location.hash !== route
+      )
+        return;
 
       const name = buildCompressedName(source.file.name, compressFormat);
       downloadBlob(output.blob, name);
@@ -399,7 +428,12 @@ export function ConverterDialog({
       setProgress(100);
       setStage("Compressed");
     } catch (caught) {
-      if (token !== tokenRef.current || caught instanceof WorkerJobCancelled) {
+      if (
+        token !== tokenRef.current ||
+        operation !== operationRef.current ||
+        window.location.hash !== route ||
+        caught instanceof WorkerJobCancelled
+      ) {
         return;
       }
       setBusy(null);
@@ -407,7 +441,12 @@ export function ConverterDialog({
       setStage("");
       setError(errorMessage(caught));
     } finally {
-      if (token === tokenRef.current) compressJobRef.current = null;
+      if (
+        token === tokenRef.current &&
+        operation === operationRef.current &&
+        window.location.hash === route
+      )
+        compressJobRef.current = null;
     }
   }, [
     busy,
@@ -419,19 +458,6 @@ export function ConverterDialog({
     source,
     targetBytes,
   ]);
-
-  const switchMode = useCallback(
-    (next: ToolMode) => {
-      if (busy) return;
-      setMode(next);
-      setResult(null);
-      setCompressed(null);
-      setError(null);
-      setProgress(0);
-      setStage("");
-    },
-    [busy],
-  );
 
   const openFilePicker = useCallback(() => {
     if (busy) return;
@@ -462,88 +488,12 @@ export function ConverterDialog({
     !source ||
     busy !== null ||
     (!ready && error === null) ||
-    (mode === 'compress' && (customTargetInvalid || !targetBytes));
+    (mode === "compress" && (customTargetInvalid || !targetBytes));
   const actionIsRetry = Boolean(source && !ready && error);
 
   return (
-    <div
-      className="dialog-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) handleClose();
-      }}
-    >
-      <div
-        className={`dialog converter-dialog${toolbox ? " converter-dialog--toolbox" : ""}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="converter-title"
-        aria-describedby="converter-desc"
-        aria-busy={busy !== null}
-        ref={dialogRef}
-        tabIndex={-1}
-        data-testid="converter-dialog"
-      >
-        <button
-          type="button"
-          className="dialog__close icon-button"
-          onClick={handleClose}
-          aria-label="Close image tools"
-          ref={closeRef}
-        >
-          <X size={16} aria-hidden="true" />
-        </button>
-
-        <span className="dialog__icon converter-dialog__icon" aria-hidden="true">
-          {toolbox ? (
-            mode === "convert" ? (
-              <ArrowLeftRight size={24} />
-            ) : (
-              <Minimize2 size={24} />
-            )
-          ) : (
-            <Heart size={24} />
-          )}
-        </span>
-
-        <div className="tool-switch" role="group" aria-label="Image tool">
-          <button
-            type="button"
-            className={`tool-switch__button${
-              mode === "convert" ? " tool-switch__button--active" : ""
-            }`}
-            aria-pressed={mode === "convert"}
-            onClick={() => switchMode("convert")}
-            disabled={busy !== null}
-            data-testid="tool-tab-convert"
-          >
-            <ArrowLeftRight size={13} aria-hidden="true" />
-            Convert
-          </button>
-          <button
-            type="button"
-            className={`tool-switch__button${
-              mode === "compress" ? " tool-switch__button--active" : ""
-            }`}
-            aria-pressed={mode === "compress"}
-            onClick={() => switchMode("compress")}
-            disabled={busy !== null}
-            data-testid="tool-tab-compress"
-          >
-            <Minimize2 size={13} aria-hidden="true" />
-            Compress
-          </button>
-        </div>
-
-        <p className="eyebrow">The mercy department</p>
-        <h2 id="converter-title">
-          {mode === "convert" ? "Just convert it." : "Squeeze it gently."}
-        </h2>
-        <p id="converter-desc" className="dialog__lede">
-          {mode === "convert"
-            ? "No destruction, no noise, no character-building artifacts. Pick an image, choose a format, and keep the pixels you came with."
-            : "Same image, less weight. Pick a target size and we keep the highest quality that still fits, only shrinking dimensions when the pixels demand it."}
-        </p>
-
+    <div className="image-tools toolkit-workspace" data-testid="image-tools">
+      <div className="toolkit-stack">
         <input
           ref={inputRef}
           id="converter-file-input"
@@ -618,6 +568,75 @@ export function ConverterDialog({
           </label>
         )}
 
+        <section className="toolkit-preview" aria-label="Image preview">
+          <div className="toolkit-preview__bar">
+            <span className="field__label">
+              {resultUrl && !showOriginal ? "Result" : "Original"}
+            </span>
+            {resultUrl && (
+              <div
+                className="toolkit-preview__switch"
+                role="group"
+                aria-label="Preview comparison"
+              >
+                <button
+                  type="button"
+                  aria-pressed={showOriginal}
+                  onClick={() => setShowOriginal(true)}
+                >
+                  Original
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={!showOriginal}
+                  onClick={() => setShowOriginal(false)}
+                >
+                  Result
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="toolkit-preview__canvas">
+            {sourceUrl ? (
+              <img
+                src={resultUrl && !showOriginal ? resultUrl : sourceUrl}
+                alt={
+                  resultUrl && !showOriginal
+                    ? "Processed result"
+                    : "Original image"
+                }
+              />
+            ) : (
+              <div className="toolkit-preview__empty">
+                <FileImage size={44} aria-hidden="true" />
+                <h3>Your pixels go here.</h3>
+                <p>Choose an image. Preview the change. Keep what works.</p>
+              </div>
+            )}
+          </div>
+          {source && (
+            <p className="toolkit-preview__caption">
+              {formatDimensions(source.width, source.height)} · Original{" "}
+              {formatFileSize(source.file.size)}
+              {outputBlob ? ` · Result ${formatFileSize(outputBlob.size)}` : ""}
+            </p>
+          )}
+        </section>
+      </div>
+      <div className="panel toolkit-box toolkit-stack image-tools__settings">
+        <div className="toolkit-settings-heading">
+          <span className="eyebrow">Make it yours</span>
+          <h3>
+            {mode === "convert"
+              ? "Choose your format."
+              : "Less file. More freedom."}
+          </h3>
+          <p>
+            {mode === "convert"
+              ? "PNG keeps every pixel. JPG and WebP trade some detail for smaller files."
+              : "Set your size budget. We search for the best quality that fits."}
+          </p>
+        </div>
         {mode === "convert" ? (
           <fieldset className="converter-formats">
             <legend>Output format</legend>
@@ -639,7 +658,9 @@ export function ConverterDialog({
                     disabled={!ready || busy !== null}
                     data-testid={`converter-format-${item.id}`}
                   >
-                    <span className="converter-format__label">{item.label}</span>
+                    <span className="converter-format__label">
+                      {item.label}
+                    </span>
                     <span className="converter-format__note">{item.note}</span>
                   </button>
                 );
@@ -671,7 +692,9 @@ export function ConverterDialog({
                       <span className="converter-format__label">
                         {item.label}
                       </span>
-                      <span className="converter-format__note">{item.note}</span>
+                      <span className="converter-format__note">
+                        {item.note}
+                      </span>
                     </button>
                   );
                 })}
@@ -706,7 +729,7 @@ export function ConverterDialog({
                       data-testid={`compressor-target-${target.bytes}`}
                     >
                       <span className="converter-format__label">
-                        {target.label}
+                        {formatFileSize(target.bytes)}
                       </span>
                       <span className="converter-format__note">
                         {reduction}% smaller
@@ -909,6 +932,12 @@ export function ConverterDialog({
           </div>
         )}
 
+        {compressed && !compressed.hitTarget && (
+          <p className="converter-hint">
+            Target not reached at this quality floor. This is the smallest
+            result found. Try a larger target or lower the minimum quality.
+          </p>
+        )}
         {compressed && source && (
           <div
             className="converter-result converter-result--compressed"
@@ -945,14 +974,23 @@ export function ConverterDialog({
           </div>
         )}
 
-        <div className="dialog__actions">
-          <button
-            type="button"
-            className="button button--ghost"
-            onClick={handleClose}
-          >
-            Close
-          </button>
+        <div className="toolkit-actions">
+          {(busy === "converting" || busy === "compressing") && (
+            <button
+              type="button"
+              className="button button--ghost"
+              onClick={() => {
+                operationRef.current += 1;
+                exportJobRef.current?.cancel();
+                compressJobRef.current?.cancel();
+                setBusy(null);
+                setProgress(0);
+                setStage("");
+              }}
+            >
+              Cancel
+            </button>
+          )}
           <button
             type="button"
             className="button button--primary"
@@ -985,7 +1023,7 @@ export function ConverterDialog({
           </button>
         </div>
 
-        <p className="dialog__privacy">
+        <p className="toolkit-privacy">
           <LockKeyhole size={12} aria-hidden="true" />
           Everything stays in this tab. No server uploads, no accounts, no
           damage.

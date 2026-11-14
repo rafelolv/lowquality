@@ -19,7 +19,6 @@ import { TextPanel } from "./components/TextPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { EmptyState } from "./components/EmptyState";
 import { ExportBar } from "./components/ExportBar";
-import { ConverterDialog } from "./components/ConverterDialog";
 import { ToolsSection } from "./components/ToolsSection";
 import { HowItWorks } from "./components/HowItWorks";
 import { About } from "./components/About";
@@ -183,8 +182,6 @@ export default function App() {
   const [exportStage, setExportStage] = useState("");
 
   const [notices, setNotices] = useState<NoticeMessage[]>([]);
-  const [toolMode, setToolMode] = useState<ToolMode | null>(null);
-  const [toolboxDialog, setToolboxDialog] = useState(false);
 
   const settings = useMemo(
     () => resolveSettings(quality, presetId, overrides),
@@ -217,26 +214,11 @@ export default function App() {
     setNotices((previous) => previous.filter((notice) => notice.id !== id));
   }, []);
 
-  const openConverter = useCallback(() => {
-    setToolboxDialog(false);
-    setToolMode("convert");
-  }, []);
-  const openCompressor = useCallback(() => {
-    setToolboxDialog(false);
-    setToolMode("compress");
-  }, []);
   const openTool = useCallback((mode: ToolMode) => {
-    setToolboxDialog(false);
-    setToolMode(mode);
+    window.location.hash = `toolbox/${mode}`;
   }, []);
-  const openToolboxTool = useCallback((mode: ToolMode) => {
-    setToolboxDialog(true);
-    setToolMode(mode);
-  }, []);
-  const closeTool = useCallback(() => {
-    setToolMode(null);
-    setToolboxDialog(false);
-  }, []);
+  const openConverter = useCallback(() => openTool("convert"), [openTool]);
+  const openCompressor = useCallback(() => openTool("compress"), [openTool]);
 
   const replacePreview = useCallback((next: PreviewResult | null) => {
     const previous = previewRef.current;
@@ -1135,7 +1117,7 @@ export default function App() {
         </div>
       </div>
 
-      {isToolbox && <ToolboxPage hash={hash} onOpenTool={openToolboxTool} />}
+      {isToolbox && <ToolboxPage hash={hash} />}
       <main hidden={isToolbox}>
         <div className="container">
           <section className="hero" aria-labelledby="hero-heading">
@@ -1347,14 +1329,6 @@ export default function App() {
           pending={gifScalePending}
           onCancel={() => setGifScalePending(null)}
           onConfirm={handleGifScaleConfirm}
-        />
-      )}
-
-      {toolMode && (
-        <ConverterDialog
-          initialMode={toolMode}
-          onClose={closeTool}
-          toolbox={toolboxDialog}
         />
       )}
     </div>
