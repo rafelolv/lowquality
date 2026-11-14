@@ -1,4 +1,4 @@
-import { Download, LockKeyhole, SlidersHorizontal, UploadCloud } from 'lucide-react';
+import { Download, SlidersHorizontal, UploadCloud } from 'lucide-react';
 
 const STEPS = [
   {
@@ -53,11 +53,8 @@ export function HowItWorks() {
         </div>
 
         <div className="local-strip">
-          <LockKeyhole size={16} aria-hidden="true" />
-          <span>
-            Your files never touch a server. Loading this page and its bundled assets is
-            the only network activity.
-          </span>
+          <strong>Your browser does the damage.</strong>
+          <span>The image stays on your device.</span>
         </div>
       </div>
     </section>

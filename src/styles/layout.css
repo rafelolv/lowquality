@@ -544,23 +544,25 @@
 
 .local-strip {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 24px;
   margin-top: 26px;
-  padding: 13px 18px;
-  color: var(--lavender);
-  background: rgba(28, 11, 52, 0.55);
-  border: 2px dashed var(--line-soft);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
+  padding-top: 20px;
+  border-top: 2px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 13px;
   line-height: 1.5;
-  text-align: center;
 }
 
-.local-strip svg {
-  flex: none;
-  color: var(--green);
+.local-strip strong {
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 /* --------------------------------------------------------------------------
