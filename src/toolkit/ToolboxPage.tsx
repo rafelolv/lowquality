@@ -13,7 +13,7 @@ import {
   dimension,
   type Rect,
 } from "../lib/toolkit/geometry";
-import { UploadCloud, LockKeyhole, ArrowLeft } from "lucide-react";
+import { UploadCloud, ArrowLeft } from "lucide-react";
 import { ImageTools } from "./ImageTools";
 import { formatFileSize } from "../lib/imageLoader";
 import { startJob } from "./client";
@@ -259,10 +259,6 @@ export function ToolboxPage({ hash }: { hash: string }) {
           LowQuality <span className="text-yellow">Toolbox</span>
         </h1>
         <p>Good tools. Bad attitude. Give your files a little mercy.</p>
-        <div className="toolkit-trust">
-          <LockKeyhole size={15} aria-hidden="true" /> 9 tools. Zero uploads.
-          All yours.
-        </div>
       </div>
       <nav className="toolkit-nav" aria-label="Toolbox navigation">
         <a

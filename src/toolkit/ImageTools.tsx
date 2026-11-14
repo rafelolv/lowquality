@@ -3,7 +3,6 @@ import {
   Download,
   FileImage,
   Loader2,
-  LockKeyhole,
   RefreshCw,
   UploadCloud,
 } from "lucide-react";
@@ -1022,12 +1021,6 @@ export function ImageTools({ mode }: ImageToolsProps) {
             </span>
           </button>
         </div>
-
-        <p className="toolkit-privacy">
-          <LockKeyhole size={12} aria-hidden="true" />
-          Everything stays in this tab. No server uploads, no accounts, no
-          damage.
-        </p>
       </div>
     </div>
   );

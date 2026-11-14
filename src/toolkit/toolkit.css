@@ -507,13 +507,6 @@
   color: var(--muted);
   font-size: 18px;
 }
-.toolkit-trust {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--green);
-  font-size: 13px;
-}
 .toolkit-nav {
   gap: 8px;
 }
@@ -676,18 +669,6 @@
 .toolkit-settings-heading > p:last-child {
   color: var(--muted);
   font-size: 14px;
-}
-.toolkit-privacy {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 12px;
-}
-.toolkit-privacy svg {
-  flex: none;
-  color: var(--green);
-  margin-top: 3px;
 }
 .toolkit-preview {
   overflow: hidden;
