@@ -24,7 +24,8 @@ The interface is a deliberately unsubtle retro 8-bit console: dark purple checke
 - **Reset edits** restores the original pixels and removes added text while keeping the loaded file. Clear removes the file entirely.
 - **Live preview** with original/result/compare modes, playback for GIFs, fit-to-window zoom, and a draggable text box.
 - **Exports:** PNG, JPG, WebP, and animated GIF. Copying a destroyed PNG to the clipboard is supported where the browser allows it.
-- **LowQuality Toolbox:** a separate, local-only workspace at `#toolbox` with six practical image tools: Resize & Crop, Batch, Metadata, Favicon, Redact, and GIF Kit. Each has its own hash route, and stills stay loaded while switching tools.
+- **LowQuality Toolbox:** a separate, local-only workspace at `#toolbox` with seven practical tools: Resize & Crop, Batch, Metadata, Favicon, Redact, GIF Kit, and Video to GIF. Each has its own hash route, and stills stay loaded while switching tools.
+- **Video to GIF:** trim an MP4, WEBM, M4V or MOV clip, pick a frame rate, width, palette, speed, loop and direction, then capture and encode it in a local worker. AVI, WMV and MPEG are explained in the UI instead of being uploaded to a server that does not exist.
 - **Mercy tools:** convert stills between PNG, JPG, and WebP without applying any degradation.
 - **Target-size compressor:** pick a percentage, a fixed budget, or type a custom MB target. The worker searches for the highest WebP or JPG quality that fits, with optional resolution caps and a minimum-quality floor so dimensions only shrink when the target truly demands it.
 - **Safe limits and scaling options** before a GIF can exhaust memory.
@@ -35,15 +36,16 @@ The interface is a deliberately unsubtle retro 8-bit console: dark purple checke
 
 The Toolbox is a separate workspace that shares the LowQuality shell, tokens, and local processing rules without changing the destruction editor. Every tool is hash-routed for GitHub Pages:
 
-| Route               | Tool                                  |
-| ------------------- | ------------------------------------- |
-| `#toolbox`          | Tool landing and tool cards           |
+| Route               | Tool                                   |
+| ------------------- | -------------------------------------- |
+| `#toolbox`          | Tool landing and tool cards            |
 | `#toolbox/resize`   | Resize, crop, rotate, flip, and encode |
-| `#toolbox/batch`    | Multi-file queue with ZIP download    |
+| `#toolbox/batch`    | Multi-file queue with ZIP download     |
 | `#toolbox/metadata` | Read EXIF/GPS and reencode clean files |
 | `#toolbox/favicon`  | PNG icons, multi-size ICO, manifest    |
 | `#toolbox/redact`   | Pixelate or blur exported regions      |
 | `#toolbox/gif`      | GIF recode, reverse, speed, extract    |
+| `#toolbox/video`    | Trim video, sample frames, encode GIF  |
 
 Stills stay loaded while switching between single-file tools. Heavy decoding, transformation, compression, and GIF work runs in `src/workers/toolkit.worker.ts`; files never leave the tab.
 
@@ -98,6 +100,7 @@ The Playwright suite covers JPEG/WebP input decoding, PNG alpha through degradat
 - Animated GIFs: up to **25 MB**, **240 frames**, **1600 px** per side, and **36 million decoded pixels** in total.
 - Source GIF screens and individual patches are limited to **8 megapixels** before decoding. Larger sources must be resized externally: scaling the output cannot make the original disposal canvas smaller. Patches decode one at a time to avoid retaining all unscaled frames.
 - Oversized GIFs enter a scaling dialog with safe working-size options. Every frame, delay, and loop is kept.
+- Video inputs: MP4, WEBM, M4V and MOV, decoded by the browser. AVI, WMV and MPEG are rejected with a clear explanation because browsers do not decode them. Videos are capped at **250 MB**; GIF clips are capped at **60 seconds**, **240 frames**, **800 px** per side, and **24 million decoded frame pixels**.
 - Previews are capped at 1400 px for stills and 900 px / 14 megapixels for GIFs. Exports use the loaded working resolution.
 
 At quality 0 with no advanced overrides or text, still exports preserve the decoded source pixels (PNG; JPEG/WebP export encoding may be lossy). Static previews preserve source pixels within the 1400 px preview limit; larger images use a scaled preview. Animated GIFs still have to be re-composited and re-encoded, so GIF quantization is unavoidable on GIF export even when no damage is requested.

@@ -1,7 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { fixture, horizontalOverflow } from "./helpers";
-test("all Toolbox tools use the shared raised work surface", async ({ page }) => {
+test("all Toolbox tools use the shared raised work surface", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const [route, title] of [
     ["resize", "Resize & Crop"],
@@ -10,6 +12,7 @@ test("all Toolbox tools use the shared raised work surface", async ({ page }) =>
     ["favicon", "Favicon"],
     ["redact", "Redact"],
     ["gif", "GIF Kit"],
+    ["video", "Video to GIF"],
   ]) {
     await page.goto(`/#toolbox/${route}`);
     const shell = page.locator(".toolkit-tool-shell");
@@ -34,7 +37,7 @@ test("Convert and Compress are purple feature cards in the Toolbox grid", async 
   page,
 }) => {
   await page.goto("/#toolbox");
-  await expect(page.locator(".toolkit-cards .tool-card")).toHaveCount(8);
+  await expect(page.locator(".toolkit-cards .tool-card")).toHaveCount(9);
 
   for (const testId of ["toolbox-convert-card", "toolbox-compress-card"]) {
     const card = page.getByTestId(testId);
@@ -313,6 +316,66 @@ test("GIF Kit preserves loop, timings, frame order; reverses, changes speed, ext
   expect(errors).toEqual([]);
 });
 
+test("Video to GIF trims, samples, and exports local motion", async ({
+  page,
+}) => {
+  const errors = collectErrors(page);
+  await page.goto("/#toolbox/video");
+  await page.getByTestId("video-file-input").setInputFiles({
+    name: "legacy.avi",
+    mimeType: "video/x-msvideo",
+    buffer: Buffer.from("RIFF0000AVI "),
+  });
+  await expect(page.getByRole("alert")).toContainText(/desktop transcoder/);
+
+  await page
+    .getByTestId("video-file-input")
+    .setInputFiles(fixture("video-test.webm"));
+  await expect(
+    page.getByRole("group", { name: "GIF output plan" }),
+  ).toContainText("18");
+  await expect(
+    page.getByRole("button", { name: "Convert to GIF", exact: true }),
+  ).toBeEnabled({ timeout: 20_000 });
+
+  await page.getByLabel("Clip end", { exact: true }).fill("1");
+  await page
+    .getByLabel("Frames per second", { exact: true })
+    .selectOption("10");
+  await page.getByLabel("Palette colors", { exact: true }).selectOption("64");
+  await page.getByLabel("Reverse frames", { exact: true }).check();
+  await page
+    .getByRole("button", { name: "Convert to GIF", exact: true })
+    .click();
+
+  await expect(
+    page.getByRole("region", { name: "GIF result", exact: true }),
+  ).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByAltText("Converted GIF preview")).toBeVisible();
+  await expect(page.getByRole("region", { name: "GIF result" })).toContainText(
+    "160 × 90px",
+  );
+  await expect(page.getByRole("region", { name: "GIF result" })).toContainText(
+    "10 frames",
+  );
+
+  const event = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download GIF", exact: true }).click();
+  const bytes = await readFile((await (await event).path())!);
+  expect(bytes.subarray(0, 6).toString()).toMatch(/^GIF8[79]a$/);
+  const { parseGIF, decompressFrames } = await import("gifuct-js");
+  const parsed = parseGIF(
+    bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.length,
+    ) as ArrayBuffer,
+  );
+  expect(parsed.lsd.width).toBe(160);
+  expect(parsed.lsd.height).toBe(90);
+  expect(decompressFrames(parsed, true)).toHaveLength(10);
+  expect(errors).toEqual([]);
+});
+
 test("SVG stays local; exports JPG/WebP with real dimensions; mobile tools fit", async ({
   page,
 }) => {
@@ -386,6 +449,7 @@ test("SVG stays local; exports JPG/WebP with real dimensions; mobile tools fit",
     "Favicon",
     "Redact",
     "GIF Kit",
+    "Video to GIF",
     "Batch",
   ]) {
     await page

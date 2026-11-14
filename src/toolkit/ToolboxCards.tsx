@@ -1,6 +1,7 @@
 import {
   ArrowLeftRight,
   AppWindow,
+  Clapperboard,
   Crop,
   Files,
   Film,
@@ -45,6 +46,12 @@ export const tools = [
     name: "GIF Kit",
     icon: Film,
     description: "Frames, timing, palettes. Still moving.",
+  },
+  {
+    id: "video",
+    name: "Video to GIF",
+    icon: Clapperboard,
+    description: "Trim a clip, sample frames, encode a GIF.",
   },
 ] as const;
 export function ToolboxCards({

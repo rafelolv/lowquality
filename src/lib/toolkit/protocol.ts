@@ -5,7 +5,8 @@ export type Tool =
   | "metadata"
   | "favicon"
   | "redact"
-  | "gif";
+  | "gif"
+  | "video";
 export type Format = "png" | "jpeg" | "webp";
 export interface Options {
   tool: Tool;

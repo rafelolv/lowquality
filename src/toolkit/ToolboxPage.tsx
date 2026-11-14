@@ -3,6 +3,7 @@ import { MetadataTool } from "./tools/MetadataTool";
 import { GifTool } from "./tools/GifTool";
 import { RedactTool } from "./tools/RedactTool";
 import { ResizeTool } from "./tools/ResizeTool";
+import { VideoToGifTool } from "./tools/VideoToGifTool";
 import { useEffect, useRef, useState } from "react";
 import { tools, ToolboxCards } from "./ToolboxCards";
 import { defaults, type Options, type Result } from "../lib/toolkit/protocol";
@@ -251,6 +252,8 @@ export function ToolboxPage({
           </header>
           {tool === "batch" ? (
             <Batch />
+          ) : tool === "video" ? (
+            <VideoToGifTool />
           ) : (
             <div className="toolkit-stack">
               <div
